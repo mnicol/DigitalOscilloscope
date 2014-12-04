@@ -1,4 +1,7 @@
-Testing. Can Tiffany edit files?:
+ECE 551 project to create a digital oscilloscope with three channels. 
+The project is done in Verilog and is synthesized using synopsis. The 
+goal for the project is to have the smallest area possible while having
+full functionality. Each channel has 512 kB of data stored on it.
 
 
 
