@@ -1,0 +1,113 @@
+module UART_comm_tb();
+
+/////////////////////////////////
+// Logic for UART_comm tests  //
+///////////////////////////////
+logic clk, rst_n, clr_cmd_rdy, trmt, RX, cmd_rdy, tx_done, TX;
+logic [7:0] tx_data;
+logic[23:0] cmd;
+
+
+/////////////////////////////////////////
+// Logic for tester UART transciever  //
+///////////////////////////////////////
+logic [23:0] cmd_gold;
+logic [7:0] tx_data_tst, rx_data_tst;
+logic clr_rdy_tst, trmt_tst, TX_tst, tx_done_tst, RX_tst, rdy_tst;
+
+
+//////////////////////////////////////////
+// Instantiate UART_comm for testing   //
+////////////////////////////////////////
+UART_comm iUART_comm(.clk(clk), .rst_n(rst_n), .clr_cmd_rdy(clr_cmd_rdy), .trmt(trmt),
+			.tx_data(tx_data), .RX(TX_tst), .cmd_rdy(cmd_rdy), .cmd(cmd), .tx_done(tx_done), .TX(TX));
+
+
+////////////////////////////////////////////////////////////////////////////
+// Instantiate tester UART transceiver for sending bytes to UART_comm    //
+//////////////////////////////////////////////////////////////////////////
+UART iUART_txrx(.clk(clk), .rst_n(rst_n), .tx_data(tx_data_tst), .trmt(trmt_tst), .TX(TX_tst), 
+			.tx_done(tx_done_tst), .RX(RX_tst), .clr_rdy(clr_rdy_tst), .rx_data(rx_data_tst), .rdy(rdy_tst));
+
+
+//////////////////GENERATE CLOCK//////////////////
+initial clk = 0;
+always #1 clk = ~clk;
+
+initial begin
+//////////////////////INITIALIZE//////////////////////
+	rst_n = 0;
+	clr_cmd_rdy = 1;
+	trmt = 0;
+	cmd_gold = 24'h021abc;
+	tx_data_tst = cmd_gold[23:16];
+	trmt_tst = 0;
+
+//////////////////TRANSMIT FIRST BYTES//////////////////
+	#10 @(posedge clk) begin
+		rst_n = 1;
+		clr_cmd_rdy = 0;
+		trmt_tst = 1;
+		#5 trmt_tst = 0;
+	end
+
+//////////////////TRANSMIT SECOND BYTES//////////////////
+	@(posedge tx_done_tst) begin
+		#5 tx_data_tst = cmd_gold[15:8];
+		trmt_tst = 1;
+		#5 trmt_tst = 0;
+	end
+
+///////////////////TRANSMIT THIRD BYTES//////////////////
+	@(posedge tx_done_tst) begin
+		#5 tx_data_tst = cmd_gold[7:0];
+		trmt_tst = 1;
+		#5 trmt_tst = 0;
+	end
+
+///////////////////////////DONE//////////////////////////
+	@(posedge cmd_rdy) begin
+		#10 clr_cmd_rdy = 1;
+	end
+
+
+/////////////////////TRANSMIT AGAIN//////////////////////
+	#300 @(posedge clk) begin
+		cmd_gold = 24'h0936ca;
+		tx_data_tst = cmd_gold[23:16];
+		//rst_n = 1;
+		clr_cmd_rdy = 0;
+		trmt_tst = 1;
+		#5 trmt_tst = 0;
+	end
+
+//////////////////TRANSMIT SECOND BYTES/////////////////
+	@(posedge tx_done_tst) begin
+		#5 tx_data_tst = cmd_gold[15:8];
+		trmt_tst = 1;
+		#5 trmt_tst = 0;
+	end
+
+//////////////////TRANSMIT THIRD BYTES//////////////////
+	@(posedge tx_done_tst) begin
+		#5 tx_data_tst = cmd_gold[7:0];
+		trmt_tst = 1;
+		#5 trmt_tst = 0;
+	end
+
+/////////////////////////DONE//////////////////////////
+	@(posedge cmd_rdy) begin
+		#5 $stop;
+	end
+	
+end
+
+//////////////////CHECK CMD END VALUE//////////////////
+always @(posedge cmd_rdy) begin
+	if (cmd != cmd_gold)
+		$display("ERROR: cmd is %h, should be %h", cmd, cmd_gold);
+	else 
+		$display("gg");
+end
+
+endmodule

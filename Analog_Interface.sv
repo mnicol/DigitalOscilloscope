@@ -1,0 +1,16 @@
+module Data_Capture(trig1, trig2, rclk, en, we, addr);
+
+/////////////////////////////////////////
+// 		 Inputs 	                      //
+///////////////////////////////////////
+input logic trig1, trig2;
+
+
+/////////////////////////////////////////
+// 		 Outputs 	                      //
+///////////////////////////////////////
+output logic rclk, en, we;
+
+output logic [8:0] addr;
+
+endmodule

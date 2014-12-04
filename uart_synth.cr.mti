@@ -1,0 +1,15 @@
+C:/Modeltech_pe_edu_10.3c/UART.vg {1 {vlog -work work -stats=none C:/Modeltech_pe_edu_10.3c/UART.vg
+Model Technology ModelSim PE Student Edition vlog 10.3c Compiler 2014.07 Jul 19 2014
+-- Compiling module UART
+
+Top level modules:
+	UART
+
+} {} {}} C:/Modeltech_pe_edu_10.3c/UART_tb.sv {1 {vlog -work work -sv -stats=none C:/Modeltech_pe_edu_10.3c/UART_tb.sv
+Model Technology ModelSim PE Student Edition vlog 10.3c Compiler 2014.07 Jul 19 2014
+-- Compiling module UART_tb
+
+Top level modules:
+	UART_tb
+
+} {} {}}
