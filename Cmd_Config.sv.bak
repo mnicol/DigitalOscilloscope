@@ -1,6 +1,8 @@
 module Cmd_Config(clk, rst_n, SPI_data, wrt_SPI, ss, SPI_done, EEP_data,
 		 cmd, cmd_rdy, clr_cmd_rdy, resp_data, send_resp, resp_sent);
 
+
+
 /////////////////////////////////////////
 // 		 Inputs 	                  //
 ///////////////////////////////////////
@@ -8,6 +10,7 @@ input logic clk, rst_n, SPI_done, cmd_rdy, resp_sent;
 
 input logic [7:0] EEP_data;
 input logic [23:0] cmd;
+
 
 /////////////////////////////////////////
 // 		 Outputs 	                  //
@@ -17,6 +20,14 @@ output logic wrt_SPI, clr_cmd_rdy, send_resp;
 output logic [2:0] ss;
 output logic [7:0] resp_data;
 output logic [15:0] SPI_data;
+
+
+/////////////////////////////////////////
+// 		 Internals 	                  //
+///////////////////////////////////////
+logic [8:0] triggerPosition;
+logic [7:0] trig_cfg; //Might be able to make this 5:0 as the top bits arent used and we can add on zeros if we need to for comands later
+
 
 
 ///////////////////////////////////////////
@@ -59,13 +70,40 @@ always_comb begin
 		PROC_CMD: 
 		begin
 			casex(cmd[23:16])
-				8'hx1:	begin	//TODO: 8?h01 8?b000000cc 8?hxx Dump channel command. Channel to dump to UART is
-										// specified in the lower 2-bits of the 2nd byte. cc=00 implies
-										// channel 1, cc=10 implies channel 3. and cc=11 is reserved
 
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+ * TODO			check for latch on ifs							 *
+ * CMD: 8?h01 8?b000000cc 8?hxx				 			 *
+ *																 *
+ * Dump channel command. Channel to dump to UART is specified in *
+ *  the lower 2-bits of the 2nd byte. cc=00 implies channel 1,   *
+ *  cc=10 implies channel 3. and cc=11 is reserved				 *
+ *																 *
+ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+				8'hx1:	begin
+							if( cmd[9:8] == 2'b00 )
+
+							if( cmd[9:8] == 2'b01 )
+
+							if( cmd[9:8] == 2'b10 )
+							
 							nxt_state = IDLE;
 						end
 
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+ * DONE															 *
+ * CMD: 8?h02 8?b000gggcc 8?hxx							 *
+ *																 *
+ * Configure analog gain of channel (this would correspond to 	 *
+ *  volts/div on an opamp). Channel to set gain on is specified  *
+ *  in lower 2-bits of the 2nd byte (cc). Analog gain value is   *
+ *  specified by the 3-bit ggg field of the 2nd byte. See 		 *
+ *  section AFE Gain Settings below for how this will translate  *
+ *  to SPI commands. 3- bit registers storing the current gain   *
+ *  for each will be used for accessing the proper calibration   *
+ *  coefficients from EEPROM.									 *
+ * 																 *
+ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 				8'hx2:	begin
 							ss = {0,cmd[9:8]};	//select the channel to send data to
 
@@ -85,11 +123,21 @@ always_comb begin
 							nxt_state = IDLE;
 						end
 
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+ * DONE															 *
+ * CMD: 8?h03 8?hxx 8?hLL								 *
+ *																 *
+ * Set trigger level. This command is used to set the trigger 	 *
+ *  level. The value in the 3rd byte (8?hLL) determines the	 *
+ *  trigger level. Only values between 46 and 201 are valid. 	 *
+ *																 *
+ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 				8'hx3:	begin
 							// Write to triggers
 							ss = 3'b000;
 
-							//specify trigger level in comand to send adjusted to be between 46 and 201
+							// Specify trigger level in comand to 
+							// 	send adjusted to be between 46 and 201
 							if(cmd[7:0] < 46)
 								SPI_data = {8'h13, 8'h2E}; // Saturate to 46
 							else if(cmd[7:0] > 201)
@@ -100,35 +148,68 @@ always_comb begin
 							nxt_state = IDLE;
 						end
 
-				8'hx4:	begin	//TODO: 8?h04 8?h0U 8?hLL Write the trigger position register. Determines how many
-												// samples to capture after the trigger occurs. This is a 9-bit value
-
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+ * DONE (Maybe? Seems too easy)									 *
+ * CMD: 8?h04 8?h0U 8?hLL								 *
+ *																 *
+ * Write the trigger position register. Determines how many 	 *
+ *  samples to capture after the trigger occurs. This is a 9-bit *
+ *  value.														 *
+ *																 *
+ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+				8'hx4:	begin
+							triggerPosition = cmd[8:0];
 							nxt_state = IDLE;
 						end
 
-				8'hx5:	begin	//TODO: 8?h05 8?hxx 8?h0L Set decimator (essentially the sample rate). A 4-bit value is
-														//	specified in bits[3:0] of the 3rd byte.
-
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+ * TODO															 *
+ * CMD: 8?h05 8?hxx 8?h0L								 *
+ *																 *
+ * Set decimator (essentially the sample rate). A 4-bit value is *
+ *  specified in bits[3:0] of the 3rd byte.						 *
+ *																 *
+ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+				8'hx5:	begin
+							//cmd[3:0]; // Need to find out where to set this to
 							nxt_state = IDLE;
 						end
 
-				8'hx6:	begin	//TODO: 8?h06 8?b00dettcc 8?hxx Write trig_cfg register. This command is used to clear the
-										// capture_done bit (bit[5] = d). This command is also used to
-										// configure the trigger parameters (edge, trigger type, channel)
-
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+ * DONE															 *
+ * CMD: 8?h06 8?b00dettcc 8?hxx							 *
+ *																 *
+ * Write trig_cfg register. This command is used to clear the 	 *
+ *  capture_done bit (bit[5] = d). This command is also used to  *
+ *  configure the trigger parameters(edge, trigger type, channel)*
+ *																 *
+ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+				8'hx6:	begin
+							trig_cfg[5:0] = cmd[13:8] ;
 							nxt_state = IDLE;
 						end
 
-				//8?h07 8?hxx 8?hxx Read trig_cfg register. The trig_cfg register (described below)
-				//is sent out the UART.
-				8'hx7:	begin	//TODO: Not Implemented Yet
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+ * TODO															 *
+ * CMD: 8?h07 8?hxx 8?hxx							 	 *
+ *																 *
+ * Read trig_cfg register. The trig_cfg register 				 *
+ *  (described below) is sent out the UART.	 					 *
+ *																 *
+ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+				8'hx7:	begin
+							//{2'b00, trig_cfg[5:0]}; //not sure where this is sent yet
 							nxt_state = IDLE;
 						end
 
-				
-				//8?h08 8?b00aaaaaa 8?hVV Write location specified by 6-bit address of calibration
-				//EEPROM with data specified in the 3rd byte.
-
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+ * DONE															 *
+ * CMD: 8?h08 8?b00aaaaaa 8?hVV 						 *
+ *																 *
+ * Write location specified by 6-bit address of calibration 	 *
+ *  EEPROM with data specified in the 3rd byte.					 *
+ *          													 *
+ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 				8'hx8:	begin
 							ss = 3'b100;	// Select EEPROM
 							SPI_data = {2'b01, cmd[13:0]};
@@ -136,10 +217,13 @@ always_comb begin
 							nxt_state = IDLE;
 						end
 
-				/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-				 * CMD: 8?h09 8?b00aaaaaa 8?hxx 						 					 *
-				 * Read calibration EEPROM location specified by 6-bit addres	 					 *
-				 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+ * DONE											 				 *
+ * CMD: 8?h09 8?b00aaaaaa 8?hxx 		 				 *
+ *												 				 *
+ * Read calibration EEPROM location specified by 6-bit addres	 *
+ *												 				 *
+ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 				8'hx9:	begin
 							ss = 3'b100;	// Select EEPROM
 							SPI_data = {2'b00, cmd[13:8], 8'hxx};
@@ -147,7 +231,12 @@ always_comb begin
 							nxt_state = RX_SPI;
 						end
 
-				default: nxt_state = IDLE;	//If invalid opcode is received do nothing
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+ * DONE														 	 *
+ * Default Case:  If invalid opcode is received do nothing		 *
+ *																 *
+ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+				default: nxt_state = IDLE;
 
 			endcase
 		end

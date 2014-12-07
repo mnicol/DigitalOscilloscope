@@ -1,6 +1,8 @@
 module Cmd_Config(clk, rst_n, SPI_data, wrt_SPI, ss, SPI_done, EEP_data,
 		 cmd, cmd_rdy, clr_cmd_rdy, resp_data, send_resp, resp_sent);
 
+
+
 /////////////////////////////////////////
 // 		 Inputs 	                  //
 ///////////////////////////////////////
@@ -8,6 +10,7 @@ input logic clk, rst_n, SPI_done, cmd_rdy, resp_sent;
 
 input logic [7:0] EEP_data;
 input logic [23:0] cmd;
+
 
 /////////////////////////////////////////
 // 		 Outputs 	                  //
@@ -17,6 +20,14 @@ output logic wrt_SPI, clr_cmd_rdy, send_resp;
 output logic [2:0] ss;
 output logic [7:0] resp_data;
 output logic [15:0] SPI_data;
+
+
+/////////////////////////////////////////
+// 		 Internals 	                  //
+///////////////////////////////////////
+logic [8:0] triggerPosition;
+logic [7:0] trig_cfg; //Might be able to make this 5:0 as the top bits arent used and we can add on zeros if we need to for comands later
+
 
 
 ///////////////////////////////////////////
@@ -61,7 +72,7 @@ always_comb begin
 			casex(cmd[23:16])
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
- * TODO															 *
+ * TODO			check for latch on ifs							 *
  * CMD: 8?h01 8?b000000cc 8?hxx				 			 *
  *																 *
  * Dump channel command. Channel to dump to UART is specified in *
@@ -70,6 +81,12 @@ always_comb begin
  *																 *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 				8'hx1:	begin
+							if( cmd[9:8] == 2'b00 )
+
+							if( cmd[9:8] == 2'b01 )
+
+							if( cmd[9:8] == 2'b10 )
+							
 							nxt_state = IDLE;
 						end
 
@@ -119,7 +136,8 @@ always_comb begin
 							// Write to triggers
 							ss = 3'b000;
 
-							//specify trigger level in comand to send adjusted to be between 46 and 201
+							// Specify trigger level in comand to 
+							// 	send adjusted to be between 46 and 201
 							if(cmd[7:0] < 46)
 								SPI_data = {8'h13, 8'h2E}; // Saturate to 46
 							else if(cmd[7:0] > 201)
@@ -131,7 +149,7 @@ always_comb begin
 						end
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
- * TODO															 *
+ * DONE (Maybe? Seems too easy)									 *
  * CMD: 8?h04 8?h0U 8?hLL								 *
  *																 *
  * Write the trigger position register. Determines how many 	 *
@@ -139,7 +157,8 @@ always_comb begin
  *  value.														 *
  *																 *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
-				8'hx4:	begin
+				8'hx4:	begin
+							triggerPosition = cmd[8:0];
 							nxt_state = IDLE;
 						end
 
@@ -151,12 +170,13 @@ always_comb begin
  *  specified in bits[3:0] of the 3rd byte.						 *
  *																 *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
-				8'hx5:	begin
+				8'hx5:	begin
+							//cmd[3:0]; // Need to find out where to set this to
 							nxt_state = IDLE;
 						end
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
- * TODO															 *
+ * DONE															 *
  * CMD: 8?h06 8?b00dettcc 8?hxx							 *
  *																 *
  * Write trig_cfg register. This command is used to clear the 	 *
@@ -164,12 +184,13 @@ always_comb begin
  *  configure the trigger parameters(edge, trigger type, channel)*
  *																 *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
-				8'hx6:	begin
+				8'hx6:	begin
+							trig_cfg[5:0] = cmd[13:8] ;
 							nxt_state = IDLE;
 						end
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
- * TODO															 *
+ * TODO	(need where to send via uart?)							 *
  * CMD: 8?h07 8?hxx 8?hxx							 	 *
  *																 *
  * Read trig_cfg register. The trig_cfg register 				 *
@@ -177,6 +198,7 @@ always_comb begin
  *																 *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 				8'hx7:	begin
+							//{2'b00, trig_cfg[5:0]}; //not sure where this is sent yet
 							nxt_state = IDLE;
 						end
 
@@ -210,7 +232,7 @@ always_comb begin
 						end
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
- *															 	 *
+ * DONE														 	 *
  * Default Case:  If invalid opcode is received do nothing		 *
  *																 *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
