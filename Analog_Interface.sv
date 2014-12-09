@@ -263,7 +263,7 @@ endmodule
 /////////////////////////////////////////////////////////////////////////////////
 // Digital_core module that implements logic for output signal triggered.     //
 // trig_src determines which signal, trig1 or trig2, is setting the trigger, //
-// and trig_edge determines if a rising or falling edge of that sig1nal      //
+// and trig_edge determines if a rising or falling edge of that sig1nal     //
 // sets triggered, the trigger event makes trig_set high for 1 clk period, //
 // after which triggered goes/stays high until set_cap_done is set.       //
 // Triggered can't go high unless armed and trig_en are set              //

@@ -30,6 +30,12 @@ module dig_core(clk,rst_n,adc_clk,trig1,trig2,SPI_data,wrt_SPI,SPI_done,ss,EEP_d
 	wire en;
 	wire we;
 	wire [8:0] cap_addr;
+	wire [8:0] trace_end;
+	wire cap_en;
+	wire dump_en;
+	wire [1:0] dump_chan;
+	wire [15:0] og1, og2, og3;
+	wire 
 	
  
   ///////////////////////////////////////////////////////
