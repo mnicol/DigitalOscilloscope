@@ -85,6 +85,7 @@ always_comb begin
 	strt_dump = 1'b0;
 	incr_addr = 1'b0;
 	ram_trmt = 1'b0;
+	nxt_state = IDLE;
 
 	case (state)
 		IDLE: if (!we & en) begin
@@ -111,20 +112,31 @@ end
 /////////////////////////////////////////
 // 		 offset/gain correction         //
 ///////////////////////////////////////
-logic signed [9:0] w1a, w1b;	// Signed to recognize neg values
-logic [15:0] w2a, w2b;
+
+//logic signed [9:0] w1a, w1b;	// Signed to recognize neg values
+//logic [15:0] w2a, w2b;
 
 // Used if subtracting offset from unsigned raw data
-logic signed [7:0] opp_offset;
-assign opp_offset = ~(offset) + 1;
+//logic signed [7:0] opp_offset;
+//assign opp_offset = ~(offset) + 1;
 
 // Add or subtract offset and check if saturation needed
-assign w1a = offset[7] ? (rdata - opp_offset) : (rdata + offset);
-assign w1b = w1a[9] ? 8'h00 : ((w1a[8] & ~w1a[9]) ? 8'hFF : w1a);
+//assign w1a = offset[7] ? (rdata - opp_offset) : (rdata + offset);
+//assign w1b = w1a[9] ? 8'h00 : ((w1a[8] & ~w1a[9]) ? 8'hFF : w1a);
 
 // Multiply and check if saturation needed before dividing
-assign w2a = (gain * w1b);
-assign w2b = w2a[15] ? (15'h7FFF) : w2a;
-assign ram_tx_data = w2b[14:7];
+//assign w2a = (gain * w1b);
+//assign w2b = w2a[15] ? (15'h7FFF) : w2a;
+//assign ram_tx_data = w2b[14:7];
+
+logic [7:0] sum, sat_sum;
+logic [15:0] prod, sat_prod;
+
+assign sum = rdata + offset;
+assign sat_sum = (~offset[7] && rdata[7] && ~sum[7]) ? 8'hff :
+									(offset[7] && ~rdata[7] && sum[7]) ? 8'h00 : sum;
+assign prod = sat_sum * gain;
+assign sat_prod = (prod[15]) ? 16'h7fff : prod;
+assign ram_tx_data = sat_prod[14:7];
 
 endmodule
