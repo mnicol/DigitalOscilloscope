@@ -19,17 +19,27 @@ module DSO_dig(clk,rst_n,adc_clk,ch1_data,ch2_data,ch3_data,trig1,trig2,MOSI,MIS
   ////////////////////////////////////////////////////
   // Define any wires needed for interconnect here //
   //////////////////////////////////////////////////
-
+  wire wrt_spi;
+  wire spi_cmd;
+  wire spi_SS_n;
+  wire spi_done;
+  wire spi_data;
 
   /////////////////////////////
   // Instantiate SPI master //
   ///////////////////////////
-  
+  SPI_mstr SpiMstr( .clk(clk), .rst_n(rst_n), .wrt(wrt_spi), .cmd(spi_cmd), .MISO(MISO), 
+					.SCLK(SCLK), .MOSI(MOSI), .SS_n(spi_SS_n), .done(spi_done), .data(spi_data));
+
   ///////////////////////////////////////////////////////////////
   // You have a SPI master peripheral with a single SS output //
   // you might have to do something creative to generate the //
   // 5 individual SS needed (3 AFE, 1 Trigger, 1 EEP)       //
   ///////////////////////////////////////////////////////////
+
+	
+
+	
   
   ///////////////////////////////////
   // Instantiate UART_comm module //
