@@ -1,5 +1,5 @@
 module RAM_Interface(clk, trace_end, cap_en, cap_addr, dump_en, dump_chan, we, 
-										ch1_rdata, ch2_rdata, ch3_rdata, og1, og2, og3, addr, rdata, en,
+										ch1_rdata, ch2_rdata, ch3_rdata, og1, og2, og3, addr, en,
 										ram_trmt, tx_done, ram_tx_data);
 
 /////////////////////////////////////////
@@ -16,7 +16,7 @@ input logic [15:0] og1, og2, og3;
 ///////////////////////////////////////
 output logic en, ram_trmt;
 output logic [8:0] addr;
-output logic [7:0] rdata, ram_tx_data;
+output logic [7:0] ram_tx_data;
 
 /////////////////////////////////////////
 // 		 Logic   	                      //
@@ -25,6 +25,7 @@ logic strt_dump, incr_addr;
 logic [8:0] dump_addr;
 logic [7:0] gain;
 logic signed [7:0] offset;
+logic [7:0] rdata;
 
 
 typedef enum reg [1:0] {IDLE, READ, WAIT} state_t;

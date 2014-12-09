@@ -83,7 +83,7 @@ end
 always_comb begin
 	strt_dump = 1'b0;
 	incr_addr = 1'b0;
-	trmt_dump = 1'b0;
+	ram_trmt = 1'b0;
 
 	case (state)
 		IDLE: if (!we & en) begin
@@ -93,7 +93,7 @@ always_comb begin
 			else nxt_state = IDLE;
 
 		READ: begin
-				dump_trmt = 1'b1;
+				ram_trmt = 1'b1;
 				nxt_state = WAIT;
 			end
 

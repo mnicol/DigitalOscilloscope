@@ -23,17 +23,27 @@ module dig_core(clk,rst_n,adc_clk,trig1,trig2,SPI_data,wrt_SPI,SPI_done,ss,EEP_d
   //////////////////////////////////////////////////////////////////////////
   // Interconnects between modules...declare any wire types you need here//
   ////////////////////////////////////////////////////////////////////////
-	reg [3:0] decimator;
-	reg [7:0] trig_cfg;
-	reg [8:0] trig_pos;
+	wire [3:0] decimator;
+	wire [7:0] trig_cfg;
+	wire [8:0] trig_pos;
+	wire set_cap_done;
+	wire en;
+	wire we;
+	wire [8:0] cap_addr;
+	wire [8:0] trace_end;
+	wire cap_en;
+	wire dump_en;
+	wire [1:0] dump_chan;
+	wire [15:0] og1, og2, og3;
+	wire 
 	
  
   ///////////////////////////////////////////////////////
   // Instantiate the blocks of your digital core next //
   /////////////////////////////////////////////////////
 Analog_Interface iAnaI(.clk(clk), .adc_clk(adc_clk), .rst_n(rst_n), .trig1(trig1), .trig2(trig2),
-			.decimator(decimator), .trig_cfg(trig_cfg), .trig_pos(trig_pos), .trig_en(trig_en),
-			.set_cap_done(set_cap_done), .en(en), .we(we), .addr(addr), .trace_end(trace_end));
+			.decimator(decimator), .trig_cfg(trig_cfg), .trig_pos(trig_pos),
+			.set_cap_done(set_cap_done), .en(en), .we(we), .addr(cap_addr), .trace_end(trace_end));
 
 RAM_Interface iRAMI(.clk(clk), .trace_end(trace_end), .cap_en(cap_en), .cap_addr(cap_addr),
 			.dump_en(dump_en), .dump_chan(dump_chan), .we(we), .ch1_rdata(ch1_rdata),

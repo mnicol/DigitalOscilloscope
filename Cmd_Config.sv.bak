@@ -1,5 +1,5 @@
 module Cmd_Config(clk, rst_n, SPI_data, wrt_SPI, ss, SPI_done, EEP_data,
-		 cmd, cmd_rdy, clr_cmd_rdy, resp_data, send_resp, resp_sent, trmt, tx_data, decimator, dump_chan, dump_en);
+		 cmd, cmd_rdy, clr_cmd_rdy, resp_data, send_resp, resp_sent, trmt, tx_data, decimator, dump_chan, dump_en, trig_cfg, EEP_cfg_data);
 
 
 
@@ -20,15 +20,15 @@ output logic wrt_SPI, clr_cmd_rdy, send_resp, trmt, dump_en;
 output logic [1:0] dump_chan;
 output logic [2:0] ss;
 output logic [3:0] decimator;
-output logic [7:0] resp_data, tx_data;
+output logic [5:0] trig_cfg;
+output logic [7:0] resp_data, tx_data, EEP_cfg_data;
+output logic [8:0] trig_pos;
 output logic [15:0] SPI_data;
 
 
 /////////////////////////////////////////
 // 		 Internals 	                  //
 ///////////////////////////////////////
-logic [8:0] triggerPosition;
-logic [7:0] trig_cfg; //Might be able to make this 5:0 as the top bits arent used and we can add on zeros if we need to for comands later
 
 
 
@@ -160,7 +160,7 @@ always_comb begin
  *																 *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 				8'hx4:	begin
-							triggerPosition = cmd[8:0];
+							trig_pos = cmd[8:0];
 							nxt_state = IDLE;
 						end
 
@@ -251,6 +251,7 @@ always_comb begin
 				end
 		else	begin
 					//read data
+					 EEP_cfg_data = EEP_data;
 					nxt_state = IDLE;
 				end
 	endcase
