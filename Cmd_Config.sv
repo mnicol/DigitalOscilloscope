@@ -1,10 +1,6 @@
 module Cmd_Config(clk, rst_n, SPI_data, wrt_SPI, ss, SPI_done, EEP_data,
-<<<<<<< HEAD
-		 cmd, cmd_rdy, clr_cmd_rdy, resp_data, send_resp, resp_sent, trmt, tx_data, 
-			decimator, dump_chan, dump_en, og1, og2, og3);
-=======
-		 cmd, cmd_rdy, clr_cmd_rdy, resp_data, send_resp, resp_sent, trmt, tx_data, decimator, dump_chan, dump_en, trig_cfg, trig_pos, EEP_cfg_data);
->>>>>>> 2c6a9d55cb2706ab3f33d75cc8af122437e5da6f
+			 cmd, cmd_rdy, clr_cmd_rdy, resp_data, send_resp, resp_sent, trmt, tx_data, 
+			decimator, dump_chan, dump_en, og1, og2, og3, trig_cfg, trig_pos, EEP_cfg_data);
 
 
 
