@@ -26,15 +26,6 @@ logic [8:0] dump_addr;
 logic [7:0] gain;
 logic signed [7:0] offset;
 
-
-typedef enum reg [1:0] {IDLE, READ, WAIT} state_t;
-state_t state, nxt_state;
-
-always @(posedge clk) begin
-	state <= nxt_state;
-end
-
-
 /////////////////////////////////////////
 // 		 Set en  	                      //
 ///////////////////////////////////////
@@ -71,27 +62,7 @@ always_ff @(posedge clk) begin
 		rdata <= ch3_rdata;
 end
 
-always_comb @(posedge clk) begin
-	
-	case (state) begin
-		IDLE: if (!we & en) begin
-				nxt_state = READ;
-				strt_dump = 1'b1;
-			end
-			else nxt_state = IDLE;
 
-		READ: if ();
-
-		WAIT:;
-	endcase
-	
-end
-
-
-
-/////////////////////////////////////////
-// 		 offset/gain correction         //
-///////////////////////////////////////
 wire signed [9:0] w1a, w1b;	// Signed to recognize neg values
 wire [15:0] w2a, w2b;
 

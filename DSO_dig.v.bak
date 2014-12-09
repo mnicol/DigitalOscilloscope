@@ -14,7 +14,7 @@ module DSO_dig(clk,rst_n,adc_clk,ch1_data,ch2_data,ch3_data,trig1,trig2,MOSI,MIS
   output EEP_ss_n;								// Calibration EEPROM slave select
   output TX;									// UART TX to HOST
   input RX;										// UART RX from HOST
-  //output LED_n;									// control to active low LED
+  output LED_n;									// control to active low LED
   
   ////////////////////////////////////////////////////
   // Define any wires needed for interconnect here //
