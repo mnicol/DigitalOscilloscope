@@ -43,7 +43,7 @@ always_ff @(posedge clk, posedge clr_cnt)
 ///////////////////////////////////////////
 always_ff @(posedge SCLK, posedge clr_cnt)
 	if (clr_cnt)
-		cnt_SCLK <= 0'b00000;
+		cnt_SCLK <= 5'b00000;
 	else
 		cnt_SCLK <= cnt_SCLK + 1;
 
