@@ -108,18 +108,6 @@ always_ff @(posedge clk, negedge rst_n) begin
 end
 
 /////////////////////////////////////////
-// 		 Set trig_ptr                   //							DO WE NEED THIS?
-///////////////////////////////////////
-always_ff @(posedge clk, negedge rst_n) begin
-	if (!rst_n)
-		trig_ptr <= 9'h000;
-	else if (trig_set)
-		trig_ptr <= addr;
-	else
-		trig_ptr <= trig_ptr;
-end
-
-/////////////////////////////////////////
 // 		 Set trace_end                  //
 ///////////////////////////////////////
 always_ff @(posedge clk, negedge rst_n) begin

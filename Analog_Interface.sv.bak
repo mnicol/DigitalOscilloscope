@@ -22,7 +22,7 @@ output logic [8:0] addr, trace_end;
 ///////////////////////////////////////
 logic [8:0] trig_ptr;
 logic triggered, armed, clr_armed, set_armed;	// Signals for trigger logic
-logic trig_en;
+logic trig_en, trig_edge, trig_src;
 //	assign trig_en = auto | normal;
 logic set_trace_end;
 logic src_ff1, src_ff2, src_ff3;							// Flip flops for asynchronous trigger inputs

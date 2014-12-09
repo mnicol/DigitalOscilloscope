@@ -148,8 +148,8 @@ always_ff @(posedge clk, negedge rst_n) begin
 		scff4 <= scff3;
 		scff5 <= scff4;
 	end
-	negSCLKmiso <= (~scff4 & scff5);
 end
+assign negSCLKmiso = (~scff4 & scff5);
 
 ///////////////////////////////////////////
 // Shift MISO bits in
