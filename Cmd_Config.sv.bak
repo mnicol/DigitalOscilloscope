@@ -56,6 +56,8 @@ always_comb begin
 	ss = 3'b111;
 	wrt_SPI = 0;
 	SPI_data = 16'hxxxx;
+	dump_en = 1'b0;
+ 	trmt = 1'b0;
 	nxt_state = IDLE;
 	
 	case (state)
@@ -74,11 +76,11 @@ always_comb begin
 			casex(cmd[23:16])
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
- * TODO			check for latch on ifs							 *
+ * DONE															 *
  * CMD: 8?h01 8?b000000cc 8?hxx				 			 *
  *																 *
  * Dump channel command. Channel to dump to UART is specified in *
- *  the lower 2-bits of the 2nd byte. cc=00 implies channel 1,   *
+ *  the lower 2-bits of thetrmt = 1'b1; 2nd byte. cc=00 implies channel 1,   *
  *  cc=10 implies channel 3. and cc=11 is reserved				 *
  *																 *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */

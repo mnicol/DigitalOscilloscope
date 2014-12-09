@@ -1,11 +1,11 @@
-module RAM_Interface(clk, rclk, trace_end, cap_en, cap_addr, dump_en, dump_chan, we, 
+module RAM_Interface(clk, trace_end, cap_en, cap_addr, dump_en, dump_chan, we, 
 										ch1_rdata, ch2_rdata, ch3_rdata, og1, og2, og3, addr, rdata, en,
 										ram_trmt, tx_done, ram_tx_data);
 
 /////////////////////////////////////////
 // 		 Inputs 	                      //
 ///////////////////////////////////////
-input logic clk, rclk, cap_en, dump_en, we, tx_done;
+input logic clk, cap_en, dump_en, we, tx_done;
 input logic [8:0] trace_end, cap_addr;
 input logic [1:0] dump_chan;
 input logic [7:0] ch1_rdata, ch2_rdata, ch3_rdata;
@@ -63,26 +63,44 @@ end
 // 		 set rdata for read             //
 ///////////////////////////////////////
 always_ff @(posedge clk) begin
-	if (dump_chan == 0)
+	if (dump_chan == 0) begin
 		rdata <= ch1_rdata;	
-	else if (dump_chan == 1)
+		offset <= og1[7:0];
+		gain <= og1[15:8];
+	end
+	else if (dump_chan == 1) begin
 		rdata <= ch2_rdata;
-	else
+		offset <= og2[7:0];
+		gain <= og2[15:8];
+	end
+	else begin
 		rdata <= ch3_rdata;
+		offset <= og3[7:0];
+		gain <= og3[15:8];
+	end
 end
 
-always_comb @(posedge clk) begin
-	
-	case (state) begin
+always_comb begin
+	strt_dump = 1'b0;
+	incr_addr = 1'b0;
+	ram_trmt = 1'b0;
+
+	case (state)
 		IDLE: if (!we & en) begin
 				nxt_state = READ;
 				strt_dump = 1'b1;
 			end
 			else nxt_state = IDLE;
 
-		READ: if ();
+		READ: begin
+				ram_trmt = 1'b1;
+				nxt_state = WAIT;
+			end
 
-		WAIT:;
+		WAIT: if (tx_done) begin
+				incr_addr = 1'b1;
+				nxt_state = READ;
+			end
 	endcase
 	
 end
@@ -92,11 +110,11 @@ end
 /////////////////////////////////////////
 // 		 offset/gain correction         //
 ///////////////////////////////////////
-wire signed [9:0] w1a, w1b;	// Signed to recognize neg values
-wire [15:0] w2a, w2b;
+logic signed [9:0] w1a, w1b;	// Signed to recognize neg values
+logic [15:0] w2a, w2b;
 
 // Used if subtracting offset from unsigned raw data
-wire signed [7:0] opp_offset;
+logic signed [7:0] opp_offset;
 assign opp_offset = ~(offset) + 1;
 
 // Add or subtract offset and check if saturation needed

@@ -1,12 +1,12 @@
 module Analog_Interface(clk, adc_clk, rst_n, trig1, trig2, decimator, 
-							trig_cfg, trig_pos, trig_en, set_cap_done, en, we, addr, trace_end);
+							trig_cfg, trig_pos, set_cap_done, en, we, addr, trace_end);
 
 
 /////////////////////////////////////////
 // 		 Inputs 	                      //
 ///////////////////////////////////////
-input logic clk, adc_clk, rst_n, trig1, trig2, //trig_src, trig_edge, 
-									 trig_en;
+input logic clk, adc_clk, rst_n, trig1, trig2; //trig_src, trig_edge, 
+									// trig_en;
 input logic [7:0] trig_cfg;
 input logic [8:0] trig_pos;
 input logic [3:0] decimator;
@@ -22,6 +22,8 @@ output logic [8:0] addr, trace_end;
 ///////////////////////////////////////
 logic [8:0] trig_ptr;
 logic triggered, armed, clr_armed, set_armed;	// Signals for trigger logic
+logic trig_en;
+//	assign trig_en = auto | normal;
 logic set_trace_end;
 logic src_ff1, src_ff2, src_ff3;							// Flip flops for asynchronous trigger inputs
 logic trig_w, trig_set, trig_ff;							// Wires for intermediate signals
@@ -36,6 +38,7 @@ assign trig_edge = trig_cfg[4];			// 1 for posedge, 0 for negedge
 //assign trig_type = trig_cfg[3:2];		// 10 auto, 01 normal, 00 off
 	assign auto = trig_cfg[3];
 	assign normal = trig_cfg[2];
+	assign trig_en = auto | normal;
 assign trig_src = trig_cfg[0];			// 0 for ch1, 1 for ch2
 
 /////////////////////////////////////////
@@ -166,7 +169,7 @@ always_comb begin
 
 	case (state)
 
-		IDLE: if ((auto|normal) & adc_clk) begin
+		IDLE: if (trig_en & adc_clk) begin
 				nxt_state = SAMPLE1;
 				clr_trig_cnt = 1'b1;
 				clr_dec_cnt = 1'b1;
