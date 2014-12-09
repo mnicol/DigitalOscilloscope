@@ -1,5 +1,5 @@
 module Cmd_Config(clk, rst_n, SPI_data, wrt_SPI, ss, SPI_done, EEP_data,
-		 cmd, cmd_rdy, clr_cmd_rdy, resp_data, send_resp, resp_sent);
+		 cmd, cmd_rdy, clr_cmd_rdy, resp_data, send_resp, resp_sent, trmt, tx_data, decimator, dump_chan, dump_en);
 
 
 
@@ -15,10 +15,12 @@ input logic [23:0] cmd;
 /////////////////////////////////////////
 // 		 Outputs 	                  //
 ///////////////////////////////////////
-output logic wrt_SPI, clr_cmd_rdy, send_resp;
+output logic wrt_SPI, clr_cmd_rdy, send_resp, trmt, dump_en;
 
+output logic [1:0] dump_chan;
 output logic [2:0] ss;
-output logic [7:0] resp_data;
+output logic [3:0] decimator;
+output logic [7:0] resp_data, tx_data;
 output logic [15:0] SPI_data;
 
 
@@ -54,6 +56,8 @@ always_comb begin
 	ss = 3'b111;
 	wrt_SPI = 0;
 	SPI_data = 16'hxxxx;
+	dump_en = 1'b0;
+ 	trmt = 1'b0;
 	nxt_state = IDLE;
 	
 	case (state)
@@ -72,21 +76,19 @@ always_comb begin
 			casex(cmd[23:16])
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
- * TODO			check for latch on ifs							 *
+ * DONE															 *
  * CMD: 8?h01 8?b000000cc 8?hxx				 			 *
  *																 *
  * Dump channel command. Channel to dump to UART is specified in *
- *  the lower 2-bits of the 2nd byte. cc=00 implies channel 1,   *
+ *  the lower 2-bits of thetrmt = 1'b1; 2nd byte. cc=00 implies channel 1,   *
  *  cc=10 implies channel 3. and cc=11 is reserved				 *
  *																 *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 				8'hx1:	begin
-							if( cmd[9:8] == 2'b00 )
-
-							if( cmd[9:8] == 2'b01 )
-
-							if( cmd[9:8] == 2'b10 )
-							
+							if( cmd[9:8] != 2'b11 ) begin
+								dump_chan = cmd[9:8];
+								dump_en = 1'b1;
+							end
 							nxt_state = IDLE;
 						end
 
@@ -149,7 +151,7 @@ always_comb begin
 						end
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
- * DONE (Maybe? Seems too easy)									 *
+ * DONE 														 *
  * CMD: 8?h04 8?h0U 8?hLL								 *
  *																 *
  * Write the trigger position register. Determines how many 	 *
@@ -163,7 +165,7 @@ always_comb begin
 						end
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
- * TODO															 *
+ * DONE															 *
  * CMD: 8?h05 8?hxx 8?h0L								 *
  *																 *
  * Set decimator (essentially the sample rate). A 4-bit value is *
@@ -171,7 +173,7 @@ always_comb begin
  *																 *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 				8'hx5:	begin
-							//cmd[3:0]; // Need to find out where to set this to
+							decimator = cmd[3:0]; // Need to find out where to set this to
 							nxt_state = IDLE;
 						end
 
@@ -185,12 +187,12 @@ always_comb begin
  *																 *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 				8'hx6:	begin
-							trig_cfg[5:0] = cmd[13:8] ;
+							trig_cfg[5:0] = cmd[13:8];
 							nxt_state = IDLE;
 						end
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
- * TODO	(need where to send via uart?)							 *
+ * DONE															 *
  * CMD: 8?h07 8?hxx 8?hxx							 	 *
  *																 *
  * Read trig_cfg register. The trig_cfg register 				 *
@@ -198,7 +200,8 @@ always_comb begin
  *																 *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 				8'hx7:	begin
-							//{2'b00, trig_cfg[5:0]}; //not sure where this is sent yet
+							tx_data = {2'b00, trig_cfg[5:0]};
+							trmt = 1'b1; //Might need extra state to wait for done
 							nxt_state = IDLE;
 						end
 
