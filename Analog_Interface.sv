@@ -1,16 +1,316 @@
-module Data_Capture(trig1, trig2, rclk, en, we, addr);
+module Analog_Interface(clk, adc_clk, rst_n, trig1, trig2, decimator, 
+							trig_cfg, trig_pos, trig_en, set_cap_done, en, we, addr, trace_end);
+
 
 /////////////////////////////////////////
 // 		 Inputs 	                      //
 ///////////////////////////////////////
-input logic trig1, trig2;
-
+input logic clk, adc_clk, rst_n, trig1, trig2, //trig_src, trig_edge, 
+									 trig_en;
+input logic [7:0] trig_cfg;
+input logic [8:0] trig_pos;
+input logic [3:0] decimator;
 
 /////////////////////////////////////////
 // 		 Outputs 	                      //
 ///////////////////////////////////////
-output logic rclk, en, we;
+output logic en, we, set_cap_done;
+output logic [8:0] addr, trace_end;
 
-output logic [8:0] addr;
+/////////////////////////////////////////
+// 		 Logic  	                      //
+///////////////////////////////////////
+logic [8:0] trig_ptr;
+logic triggered, armed, clr_armed, set_armed;	// Signals for trigger logic
+logic set_trace_end;
+logic src_ff1, src_ff2, src_ff3;							// Flip flops for asynchronous trigger inputs
+logic trig_w, trig_set, trig_ff;							// Wires for intermediate signals
+logic keep, keep_ff, clr_dec_cnt, en_dec_cnt, clr_trig_cnt;
+logic [3:0] dec_cnt, dec_pwr;									// keep logic stuff
+		assign dec_pwr = 1 << (decimator);
+logic [9:0] smpl_cnt, trig_cnt;								// keeps track of samples capured
+logic auto, normal, cap_done;
+
+assign cap_done = trig_cfg[5];			// capture done bit
+assign trig_edge = trig_cfg[4];			// 1 for posedge, 0 for negedge
+//assign trig_type = trig_cfg[3:2];		// 10 auto, 01 normal, 00 off
+	assign auto = trig_cfg[3];
+	assign normal = trig_cfg[2];
+assign trig_src = trig_cfg[0];			// 0 for ch1, 1 for ch2
+
+/////////////////////////////////////////
+// 		 States 	                      //
+///////////////////////////////////////
+typedef enum logic [2:0] {IDLE, SAMPLE1, SAMPLE2, TRIGGERED1, TRIGGERED2, DONE} state_t;
+state_t state, nxt_state;
+
+always_ff @(posedge clk, negedge rst_n) begin
+	if (!rst_n)
+		state <= IDLE;
+	else
+		state <= nxt_state;
+end
+
+
+///////////////////////////////////////////////
+// 		 Set armed signal                     //
+/////////////////////////////////////////////
+always_ff @(posedge clk, negedge rst_n) begin
+	if (!rst_n)
+		armed <= 1'b0;
+	else if (clr_armed)
+		armed <= 1'b0;
+	else if (set_armed)
+		armed <= 1'b1;
+	else armed <= armed;
+end
+assign set_armed = (smpl_cnt + trig_pos >= 512) ? 1'b1 : 1'b0;
+
+/////////////////////////////////////////
+// 		 Increment smpl_cnt             //
+///////////////////////////////////////
+always_ff @(posedge clk, negedge rst_n) begin
+	if (!rst_n)
+		smpl_cnt <= 10'h000;
+	else if (keep && ~(&smpl_cnt))
+		smpl_cnt <= smpl_cnt + 1;
+	else
+		smpl_cnt <= smpl_cnt;
+end
+
+/////////////////////////////////////////
+// 		 Increment trig_cnt             //
+///////////////////////////////////////
+always_ff @(posedge clk, negedge rst_n) begin
+	if (!rst_n)
+		trig_cnt <= 10'h000;
+	else if (clr_trig_cnt)
+		trig_cnt <= 10'h000;
+	else if ((triggered | (auto & armed)) & keep)
+		trig_cnt <= trig_cnt + 1;
+	else
+		trig_cnt <= trig_cnt;
+end
+
+/////////////////////////////////////////
+// 		 Increment addr                 //
+///////////////////////////////////////
+always_ff @(posedge clk, negedge rst_n) begin
+	if (!rst_n)
+		addr <= 9'h000;
+	else if (keep)
+		addr <= addr + 1;
+	else
+		addr <= addr;
+end
+
+/////////////////////////////////////////
+// 		 Set trig_ptr                   //							DO WE NEED THIS?
+///////////////////////////////////////
+always_ff @(posedge clk, negedge rst_n) begin
+	if (!rst_n)
+		trig_ptr <= 9'h000;
+	else if (trig_set)
+		trig_ptr <= addr;
+	else
+		trig_ptr <= trig_ptr;
+end
+
+/////////////////////////////////////////
+// 		 Set trace_end                  //
+///////////////////////////////////////
+always_ff @(posedge clk, negedge rst_n) begin
+	if (!rst_n)
+		trace_end <= 9'h000;
+	else if (set_trace_end)
+		trace_end <= addr;
+	else
+		trace_end <= trace_end;
+end
+
+/////////////////////////////////////////
+// 		 Increment dec_cnt              //
+///////////////////////////////////////
+always_ff @(posedge clk, negedge rst_n) begin
+	if (!rst_n)
+		dec_cnt <= 4'b0000;
+	else if (clr_dec_cnt)
+		dec_cnt <= 4'b0000;
+	else if (en_dec_cnt)
+		dec_cnt <= dec_cnt + 1;
+	else
+		dec_cnt <= dec_cnt;
+end
+
+/////////////////////////////////////////
+// 		 Implement rate of capture      //
+///////////////////////////////////////
+always_ff @(posedge clk, negedge rst_n) begin
+	if (!rst_n)
+		keep_ff <= 1'b0;
+	else
+		keep_ff <= keep;
+end
+assign keep = (dec_cnt == dec_pwr) ? 1'b1 : 1'b0;
+
+always_comb begin
+	clr_dec_cnt = 1'b0;
+	en_dec_cnt = 1'b0;
+	clr_trig_cnt = 1'b0;
+	clr_armed = 1'b0;
+	set_cap_done = 1'b0;
+	set_trace_end = 1'b0;
+	en = 1'b0;
+	we = 1'b0;
+	nxt_state = IDLE;
+
+	case (state)
+
+		IDLE: if ((auto|normal) & adc_clk) begin
+				nxt_state = SAMPLE1;
+				clr_trig_cnt = 1'b1;
+				clr_dec_cnt = 1'b1;
+			end
+			else nxt_state = IDLE;
+
+		SAMPLE1: begin
+				nxt_state = SAMPLE2;
+				en_dec_cnt = 1'b1;
+				we = keep_ff;
+				en = keep_ff;
+			end
+
+		SAMPLE2: if (trig_cnt == trig_pos) begin
+				nxt_state = DONE;
+				set_cap_done = 1'b1;
+				set_trace_end = 1'b1;
+				clr_armed = 1'b1;
+			end
+			else begin
+				nxt_state = SAMPLE1;
+				clr_dec_cnt = keep;
+				we = keep;
+				en = keep;
+			end
+
+		DONE: if (!cap_done) begin
+				nxt_state = IDLE;
+			end
+			else begin
+				nxt_state = DONE;
+			end
+
+		default: nxt_state = IDLE;
+
+	endcase
+
+end
+
+
+
+//////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////    Trigger Logic    ///////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////
+// MUX logic for trigger source and edge detection //
+////////////////////////////////////////////////////
+assign trig_w = trig_src ? trig2 : trig1;
+assign trig_set = trig_edge ? (~src_ff3 & src_ff2):
+															(src_ff3 & ~src_ff2);
+
+//////////////////////////////////////////////
+// Flop trig value twice for metastability //
+// and once for edge detection            //
+///////////////////////////////////////////
+always_ff @(posedge clk, negedge rst_n) begin
+	if (!rst_n) begin
+		src_ff1 <= 0;
+		src_ff2 <= 0;
+		src_ff3 <= 0;
+	end
+	else begin
+		src_ff1 <= trig_w;
+		src_ff2 <= src_ff1;
+		src_ff3 <= src_ff2;
+	end
+end
+
+////////////////////////////////////////////////
+// Gate logic feedng output signal triggered //
+//////////////////////////////////////////////
+assign trig_ff = ~(~((trig_set & armed & trig_en) 
+												| triggered) 
+												| set_cap_done);
+
+//////////////////////////
+// Set triggered value //
+////////////////////////
+always_ff @(posedge clk, negedge rst_n) begin
+	if (!rst_n)
+		triggered <= 0;
+	else
+		triggered <= trig_ff;
+end
+
+
+
+endmodule
+
+/////////////////////////////////////////////////////////////////////////////////
+// Digital_core module that implements logic for output signal triggered.     //
+// trig_src determines which signal, trig1 or trig2, is setting the trigger, //
+// and trig_edge determines if a rising or falling edge of that sig1nal      //
+// sets triggered, the trigger event makes trig_set high for 1 clk period, //
+// after which triggered goes/stays high until set_cap_done is set.       //
+// Triggered can't go high unless armed and trig_en are set              //
+//////////////////////////////////////////////////////////////////////////
+
+module Capture_trig(input clk, rst_n, trig1, trig2, trig_src, trig_edge, 
+										armed, trig_en, set_cap_done, output reg triggered);
+
+logic src_ff1, src_ff2, src_ff3;		// Flip flops for asynchronous trigger inputs
+logic trig_w, trig_set, trig_ff;	// Wires for intermediate signals
+
+//////////////////////////////////////////////////////
+// MUX logic for trigger source and edge detection //
+////////////////////////////////////////////////////
+assign trig_w = trig_src ? trig2 : trig1;
+assign trig_set = trig_edge ? (~src_ff3 & src_ff2):
+															(src_ff3 & ~src_ff2);
+
+//////////////////////////////////////////////
+// Flop trig value twice for metastability //
+// and once for edge detection            //
+///////////////////////////////////////////
+always_ff @(posedge clk, negedge rst_n) begin
+	if (!rst_n) begin
+		src_ff1 <= 0;
+		src_ff2 <= 0;
+		src_ff3 <= 0;
+	end
+	else begin
+		src_ff1 <= trig_w;
+		src_ff2 <= src_ff1;
+		src_ff3 <= src_ff2;
+	end
+end
+
+////////////////////////////////////////////////
+// Gate logic feedng output signal triggered //
+//////////////////////////////////////////////
+assign trig_ff = ~(~((trig_set & armed & trig_en) 
+												| triggered) 
+												| set_cap_done);
+
+//////////////////////////
+// Set triggered       //
+////////////////////////
+always_ff @(posedge clk, negedge rst_n) begin
+	if (!rst_n)
+		triggered <= 0;
+	else
+		triggered <= trig_ff;
+end
 
 endmodule
