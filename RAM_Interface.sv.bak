@@ -133,8 +133,8 @@ logic [7:0] sum, sat_sum;
 logic [15:0] prod, sat_prod;
 
 assign sum = rdata + offset;
-assign sat_sum = (~offset[7] && raw[7] && ~sum[7]) ? 8'hff :
-									(offset[7] && ~raw[7] && sum[7]) ? 8'h00 : sum;
+assign sat_sum = (~offset[7] && rdata[7] && ~sum[7]) ? 8'hff :
+									(offset[7] && ~rdata[7] && sum[7]) ? 8'h00 : sum;
 assign prod = sat_sum * gain;
 assign sat_prod = (prod[15]) ? 16'h7fff : prod;
 assign ram_tx_data = sat_prod[14:7];

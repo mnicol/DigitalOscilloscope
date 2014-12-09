@@ -25,6 +25,29 @@ module DSO_dig(clk,rst_n,adc_clk,ch1_data,ch2_data,ch3_data,trig1,trig2,MOSI,MIS
   wire spi_done;
   wire spi_data;
 
+	wire [8:0] addr;
+	wire en;
+	wire we;
+	
+	wire clr_cmd_rdy;
+	wire trmt;
+	wire [7:0] tx_data;
+	wire cmd_rdy;
+	wire [15:0] cmd;
+	wire tx_done;
+
+	wire [7:0] SPI_data;
+	wire wrt_SPI;
+	wire SPI_done;
+	wire ss;
+	wire [7:0] EEP_data;
+	wire [8:0] resp_data;
+	wire sent_resp;
+	wire resp_sent;
+
+clk,rst_n,adc_clk,trig1,trig2,SPI_data,wrt_SPI,SPI_done,ss,EEP_data,
+                rclk,en,we,addr,ch1_rdata,ch2_rdata,ch3_rdata,cmd,cmd_rdy,clr_cmd_rdy,
+								resp_data,send_resp,resp_sent
   /////////////////////////////
   // Instantiate SPI master //
   ///////////////////////////
@@ -36,14 +59,26 @@ module DSO_dig(clk,rst_n,adc_clk,ch1_data,ch2_data,ch3_data,trig1,trig2,MOSI,MIS
   // you might have to do something creative to generate the //
   // 5 individual SS needed (3 AFE, 1 Trigger, 1 EEP)       //
   ///////////////////////////////////////////////////////////
+
+	
+
+	
   
   ///////////////////////////////////
   // Instantiate UART_comm module //
   /////////////////////////////////
-				    
+	UART_comm iUART_c(clk.(clk), .rst_n(rst_n), .clr_cmd_rdy(clr_cmd_rdy), .trmt(trmt),
+					.tx_data(tx_data), .RX(RX), .cmd_rdy(cmd_rdy), .cmd(cmd), .tx_done(tx_done), .TX(TX));
+
   ///////////////////////////
   // Instantiate dig_core //
   /////////////////////////
+	dig_core iDC(.clk(clk), .rst_n(rst_n), .adc_clk(adc_clk), .trig1(trig1), .trig2(trig2),
+					.SPI_data(SPI_data), .wrt_SPI(wrt_SPI), .SPI_done(SPI_done), .ss(ss),
+					.EEP_data(EEP_data), .rclk(rclk), .en(en), .we(we), .addr(addr), 
+					.ch1_rdata(ch1_rdata), .ch2_rdata(ch2_rdata), .ch3_rdata(ch3_rdata), .cmd(cmd),
+					.cmd_rdy(cmd_rdy), .clr_cmd_rdy(clr_cmd_rdy), .resp_data(resp_data),
+					.send_resp(send_resp), .resp_sent(resp_sent));
 
   //////////////////////////////////////////////////////////////
   // Instantiate the 3 512 RAM blocks that store A2D samples //

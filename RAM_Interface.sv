@@ -24,7 +24,7 @@ output logic [7:0] ram_tx_data;
 logic strt_dump, incr_addr;
 logic [8:0] dump_addr;
 logic [7:0] gain;
-logic signed [7:0] offset;
+logic [7:0] offset;
 logic [7:0] rdata;
 
 
