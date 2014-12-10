@@ -1,4 +1,4 @@
-module RAM_Interface(clk, trace_end, cap_en, cap_addr, dump_en, dump_chan, we, 
+module RAM_Interface(clk, rst_n, trace_end, cap_en, cap_addr, dump_en, dump_chan, we, 
 										ch1_rdata, ch2_rdata, ch3_rdata, og1, og2, og3, addr, en,
 										ram_trmt, tx_done, ram_tx_data);
 
@@ -31,8 +31,11 @@ logic [7:0] rdata;
 typedef enum reg [1:0] {IDLE, READ, WAIT} state_t;
 state_t state, nxt_state;
 
-always @(posedge clk) begin
-	state <= nxt_state;
+always @(posedge clk, negedge rst_n) begin
+	if (!rst_n)
+		state <= IDLE;
+	else
+		state <= nxt_state;
 end
 
 
@@ -103,6 +106,10 @@ always_comb begin
 				incr_addr = 1'b1;
 				nxt_state = READ;
 			end
+			else nxt_state = WAIT;
+
+		default: nxt_state = IDLE;
+
 	endcase
 	
 end

@@ -1,0 +1,83 @@
+##########################################
+# Read in the verilog files first        #
+##########################################
+
+read_file -format sverilog { ./UART_tx.sv\
+                             ./UART_rcv.sv\
+                             ./UART.sv\
+                             ./UART_comm.sv\
+                             ./RAM_Interface.sv\
+                             ./RAM512.v\
+                             ./dig_core.v\
+                             ./Cmd_Config.sv\
+                             ./Analog_Interface.sv\
+                             ./SPI_mstr.sv\
+                             ./DSO_dig.v }
+
+##########################################
+# Set Current Design to top level        #
+##########################################
+set current_design DSO_dig
+
+#################################
+# Constraining the clock        #
+#################################
+create_clock -name "clk" -period 2.5 -waveform {0 1.25} {clk}
+set_dont_touch_network [find port clk]
+
+##############################
+# Setting input delay        #
+##############################
+set prim_inputs [remove_from_collection [all_inputs] [find port clk]]
+set_input_delay -clock clk 0.5 $prim_inputs
+
+#######################################
+# Set drive strength of inputs        #
+#######################################
+set_driving_cell -lib_cell ND2D2BWP -from_pin A1 -library tcbn40lpbwptc $prim_inputs
+set_drive 0.1 rst_n
+
+###########################################
+# Setting output delay constraints        #
+###########################################
+set_output_delay -clock clk 0.5 [all_outputs]
+set_load 0.1 [all_outputs]
+
+######################################################################
+# Some miscellaneous contraints (wireload and transition time)       #
+######################################################################
+set_wire_load_model -name TSMC32K_Lowk_Conservative -library tcbn40lpbwptc
+set_max_transition 0.15 [current_design]
+
+#########################
+# Compile the design    #
+#########################
+compile -map_effort medium
+
+###########################################
+# Set clock uncertainty and do fix hold   #
+###########################################
+set_clock_uncertainty 0.15 clk
+set_fix_hold clk
+
+########################
+# Flatten hierarchy    #
+########################
+ungroup -all -flatten
+
+##################################
+# Compile the design again       #
+##################################
+compile -map_effort medium
+
+###########################################
+# Write out area and timing reports       #
+###########################################
+report_area > area.rpt
+report_timing -delay max > max_delay.rpt
+report_timing -delay min > min_delay.rpt
+
+#################################################
+# Write out resulting sythesized netlist        #
+#################################################
+write -format verilog DSO_dig -output DSO_dig_s.vg

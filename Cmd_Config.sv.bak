@@ -21,19 +21,15 @@ output logic wrt_SPI, clr_cmd_rdy, send_resp, trmt, dump_en;
 output logic [1:0] dump_chan;
 output logic [2:0] ss;
 output logic [3:0] decimator;
-<<<<<<< HEAD
-output logic [7:0] resp_data, tx_data;
-output logic [15:0] SPI_data, og1, og2, og3;
-=======
+
 output logic [5:0] trig_cfg;
 output logic [7:0] resp_data, tx_data, EEP_cfg_data;
 output logic [8:0] trig_pos;
-output logic [15:0] SPI_data;
->>>>>>> 2c6a9d55cb2706ab3f33d75cc8af122437e5da6f
+output logic [15:0] SPI_data, og1, og2, og3;
 
 
 /////////////////////////////////////////
-// 		 Internals 	                  //
+// 		 Internals 	                    //
 ///////////////////////////////////////
 
 

@@ -5,8 +5,7 @@ module Analog_Interface(clk, adc_clk, rst_n, trig1, trig2, decimator,
 /////////////////////////////////////////
 // 		 Inputs 	                      //
 ///////////////////////////////////////
-input logic clk, adc_clk, rst_n, trig1, trig2; //trig_src, trig_edge, 
-									// trig_en;
+input logic clk, adc_clk, rst_n, trig1, trig2;
 input logic [7:0] trig_cfg;
 input logic [8:0] trig_pos;
 input logic [3:0] decimator;
@@ -23,19 +22,17 @@ output logic [8:0] addr, trace_end;
 logic [8:0] trig_ptr;
 logic triggered, armed, clr_armed, set_armed;	// Signals for trigger logic
 logic trig_en, trig_edge, trig_src;
-//	assign trig_en = auto | normal;
 logic set_trace_end;
 logic src_ff1, src_ff2, src_ff3;							// Flip flops for asynchronous trigger inputs
 logic trig_w, trig_set, trig_ff;							// Wires for intermediate signals
 logic keep, keep_ff, clr_dec_cnt, en_dec_cnt, clr_trig_cnt;
 logic [3:0] dec_cnt, dec_pwr;									// keep logic stuff
-		assign dec_pwr = 1 << (decimator);
+	assign dec_pwr = 1 << (decimator);
 logic [9:0] smpl_cnt, trig_cnt;								// keeps track of samples capured
 logic auto, normal, cap_done;
 
 assign cap_done = trig_cfg[5];			// capture done bit
 assign trig_edge = trig_cfg[4];			// 1 for posedge, 0 for negedge
-//assign trig_type = trig_cfg[3:2];		// 10 auto, 01 normal, 00 off
 	assign auto = trig_cfg[3];
 	assign normal = trig_cfg[2];
 	assign trig_en = auto | normal;
@@ -44,7 +41,7 @@ assign trig_src = trig_cfg[0];			// 0 for ch1, 1 for ch2
 /////////////////////////////////////////
 // 		 States 	                      //
 ///////////////////////////////////////
-typedef enum logic [2:0] {IDLE, SAMPLE1, SAMPLE2, TRIGGERED1, TRIGGERED2, DONE} state_t;
+typedef enum logic [2:0] {IDLE, SAMPLE1, SAMPLE2, DONE} state_t;
 state_t state, nxt_state;
 
 always_ff @(posedge clk, negedge rst_n) begin
@@ -75,6 +72,8 @@ assign set_armed = (smpl_cnt + trig_pos >= 512) ? 1'b1 : 1'b0;
 always_ff @(posedge clk, negedge rst_n) begin
 	if (!rst_n)
 		smpl_cnt <= 10'h000;
+	else if (clr_armed)
+		smpl_cnt <= 10'h000;
 	else if (keep && ~(&smpl_cnt))
 		smpl_cnt <= smpl_cnt + 1;
 	else
@@ -101,7 +100,7 @@ end
 always_ff @(posedge clk, negedge rst_n) begin
 	if (!rst_n)
 		addr <= 9'h000;
-	else if (keep)
+	else if (keep_ff)
 		addr <= addr + 1;
 	else
 		addr <= addr;
@@ -110,11 +109,9 @@ end
 /////////////////////////////////////////
 // 		 Set trace_end                  //
 ///////////////////////////////////////
-always_ff @(posedge clk, negedge rst_n) begin
-	if (!rst_n)
-		trace_end <= 9'h000;
-	else if (set_trace_end)
-		trace_end <= addr;
+always_ff @(posedge clk) begin
+	if (set_trace_end)
+		trace_end <= addr - 1;
 	else
 		trace_end <= trace_end;
 end
@@ -122,10 +119,8 @@ end
 /////////////////////////////////////////
 // 		 Increment dec_cnt              //
 ///////////////////////////////////////
-always_ff @(posedge clk, negedge rst_n) begin
-	if (!rst_n)
-		dec_cnt <= 4'b0000;
-	else if (clr_dec_cnt)
+always_ff @(posedge clk) begin
+	if (clr_dec_cnt)
 		dec_cnt <= 4'b0000;
 	else if (en_dec_cnt)
 		dec_cnt <= dec_cnt + 1;
@@ -136,11 +131,8 @@ end
 /////////////////////////////////////////
 // 		 Implement rate of capture      //
 ///////////////////////////////////////
-always_ff @(posedge clk, negedge rst_n) begin
-	if (!rst_n)
-		keep_ff <= 1'b0;
-	else
-		keep_ff <= keep;
+always_ff @(posedge clk) begin
+	keep_ff <= keep;
 end
 assign keep = (dec_cnt == dec_pwr) ? 1'b1 : 1'b0;
 
@@ -157,7 +149,7 @@ always_comb begin
 
 	case (state)
 
-		IDLE: if (trig_en & adc_clk) begin
+		IDLE: if (trig_en & !adc_clk) begin
 				nxt_state = SAMPLE1;
 				clr_trig_cnt = 1'b1;
 				clr_dec_cnt = 1'b1;
