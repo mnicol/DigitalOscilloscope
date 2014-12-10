@@ -1,6 +1,6 @@
 module Cmd_Config(clk, rst_n, SPI_data, wrt_SPI, ss, SPI_done, EEP_data,
 			 cmd, cmd_rdy, clr_cmd_rdy, resp_data, send_resp, resp_sent, trmt, tx_data, 
-			decimator, dump_chan, dump_en, og1, og2, og3, trig_cfg, trig_pos, EEP_cfg_data);
+			decimator, dump_chan, dump_en, og1, og2, og3, trig_cfg, trig_pos, EEP_cfg_data, eep_done);
 
 
 

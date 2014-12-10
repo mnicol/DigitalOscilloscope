@@ -1,6 +1,6 @@
 module Cmd_Config(clk, rst_n, SPI_data, wrt_SPI, ss, SPI_done, EEP_data,
 			 cmd, cmd_rdy, clr_cmd_rdy, resp_data, send_resp, resp_sent, trmt, tx_data, 
-			decimator, dump_chan, dump_en, og1, og2, og3, trig_cfg, trig_pos, EEP_cfg_data, eep_done);
+			decimator, dump_chan, dump_en, og1, og2, og3, trig_cfg, trig_pos, EEP_cfg_data, eep_done, gain_addr);
 
 
 
@@ -19,7 +19,7 @@ input logic [23:0] cmd;
 output logic wrt_SPI, clr_cmd_rdy, send_resp, trmt, dump_en, eep_done;
 
 output logic [1:0] dump_chan;
-output logic [2:0] ss;
+output logic [2:0] ss, gain_addr;
 output logic [3:0] decimator;
 
 output logic [5:0] trig_cfg;
@@ -36,7 +36,7 @@ logic [1:0] dump_chan_set;
 logic [8:0] trig_pos_set;
 logic [3:0] decimator_set;
 logic [5:0] trig_cfg_set;
-logic [2:0] gain_addr, gain;
+logic [2:0] gain;
 
 logic eep_set_en, tx_set_en, dump_set_en, dec_set_en, trig_pos_set_en, trig_set_en, gain_addr_en;
 
