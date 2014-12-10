@@ -53,7 +53,7 @@ AFE_A2D iAFE(.clk(clk),.rst_n(rst_n),.adc_clk(adc_clk),.ch1_ss_n(ch1_ss_n),.ch2_
 ///////////////////////////////////////////
 //UART_comm_mstr iMSTR(.clk(clk), .rst_n(rst_n), .RX(TX), .TX(RX), .cmd(cmd_snd), .send_cmd(send_cmd),
 //                     .cmd_sent(cmd_sent), .resp_rdy(resp_rdy), .resp(resp_rcv), .clr_resp_rdy(clr_resp_rdy));
-UART_tx iUARTMSTR(.clk(clk), .rst_n(rst_n), .tx_data(tx_data), .trmt(trmt), .TX(RX), .tx_done(tx_done));
+UART iUARTMSTR(.clk(clk), .rst_n(rst_n), .tx_data(tx_data), .trmt(trmt), .TX(RX), .tx_done(tx_done), .RX(TX), .clr_rdy(clr_rdy), .rx_data(rx_data), .rdy(rdy));
 
 /////////////////////////////////////
 // Instantiate Calibration EEPROM //
@@ -108,6 +108,8 @@ end
 endtask
 
 
+integer fd = $fopen("UART_OUTPUT.txt");
+
 initial begin
   clk = 0;
   rst_n = 0;			// assert reset
@@ -120,16 +122,16 @@ initial begin
 	send_full_cmd({EEP_WRT,8'b00101010, 8'hFF});
 
 	//CFG_GAIN    // Gain setting in bits [4:2], and channel in [1:0] of 2nd byte
-	send_full_cmd({CFG_GAIN, 8'b000_ggg_cc, 8'hFF});
+	send_full_cmd({CFG_GAIN, 8'b000_111_00/*8'b000_ggg_cc*/, 8'hFF});
 
 	//TRIG_CFG    // Write trig config.  2nd byte 00dettcc.  d=done, e=edge,
-	send_full_cmd({TRIG_CFG, 8'b00_d_e_tt_cc, 8'hFF});
+	send_full_cmd({TRIG_CFG, 8'b00_1_1_00_00/*8'b00_d_e_tt_cc*/, 8'hFF});
 
 	//TRIG_LVL    // Set trigger level, lower byte specifies value (46,201) is valid
-	send_full_cmd({TRIG_LVL, 8'hFF, 8'hLL});
+	send_full_cmd({TRIG_LVL, 8'hFF, 8'hAA/*8'hLL*/});
 
 	//TRIG_POS    // Set the trigger position. This is a 13-bit number, samples after capture
-	send_full_cmd({TRIG_POS, 8'b0000_000U, 8'hLL});
+	send_full_cmd({TRIG_POS, 8'b0000_0001/*8'b0000_000U*/, 8'hAA/*8'hLL*/});
 
 	//SET_DEC    	// Set decimator, lower nibble of 3rd byte. 2^this value is decimator (set to 2)
 	send_full_cmd({SET_DEC, 8'hFF, 8'h02});
@@ -137,18 +139,32 @@ initial begin
 
 ////////send dump////////
 	//DUMP_CH    	// Channel to dump specified in low 2-bits of second byte
-	send_full_cmd({DUMP_CH, 8'hFF, 8'hFF});
+	send_full_cmd({DUMP_CH, 8'b0000_0011/*8'b0000_00cc*/, 8'hFF});
 
 
 ////////Wait for dump to finish////////
 	//TRIG_RD    	// Read trig config register
-	send_full_cmd({TRIG_RD, 8'hFF, 8'hFF});
+	send_full_cmd({TRIG_RD, 8'hBA, 8'hE0});
 
 end
+
+//Store the data returned via the uart to a file for testing
+always @(posedge rdy)	begin
+
+	$fdisplay(fd,"%h", rx_data);//store rx_data to file or check to see if it's the right value?
+
+	@(posedge clk)
+		clr_rdy = 1'b1;
+
+	@(negedge clk)
+		clr_rdy = 1'b0;
+end
+
 
 always
   #1 clk = ~clk;
 			 
+$fclose(fd);
 
 endmodule
 			 
