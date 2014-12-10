@@ -31,8 +31,13 @@ output logic [15:0] SPI_data, og1, og2, og3;
 /////////////////////////////////////////
 // 		 Internals 	                    //
 ///////////////////////////////////////
+logic [7:0] EEP_cfg_data_set, tx_data_set;
+logic [1:0] dump_chan_set;
+logic [8:0] trig_pos_set;
+logic [3:0] decimator_set;
+logic [5:0] trig_cfg_set;
 
-
+logic eep_set_en, tx_set_en, dump_set_en, dec_set_en, trig_pos_set_en, trig_set_en;
 
 ///////////////////////////////////////////
 // Define the two states of the FSM     //
@@ -47,8 +52,43 @@ always_ff @(posedge clk, negedge rst_n)
 	if (!rst_n)
 		state <= IDLE;
 	else
-    		state <= nxt_state;
+    	state <= nxt_state;
 
+always_ff @(posedge clk)
+	if(eep_set_en)
+		EEP_cfg_data <= EEP_cfg_data_set;
+	else
+		EEP_cfg_data <= EEP_cfg_data;
+
+always_ff @(posedge clk)
+	if(tx_set_en)
+		tx_data <= tx_data_set;
+	else
+		tx_data <= tx_data;
+
+always_ff @(posedge clk)
+	if(dump_set_en)
+		dump_chan <= dump_chan_set;
+	else
+		dump_chan <= dump_chan;
+
+always_ff @(posedge clk)
+	if(trig_pos_set_en)
+		trig_pos <= trig_pos_set;
+	else
+		trig_pos <= trig_pos;
+
+always_ff @(posedge clk)
+	if(dec_set_en)
+		decimator <= decimator_set;
+	else
+		decimator <= decimator;
+
+always_ff @(posedge clk)
+	if(trig_set_en)
+		trig_cfg <= trig_cfg_set;
+	else
+		trig_cfg <= trig_cfg;	
 
 ///////////////////////////////////////////////////
 // Logic to determine next state and outputs    //
@@ -60,6 +100,12 @@ always_comb begin
 	SPI_data = 16'hxxxx;
 	dump_en = 1'b0;
  	trmt = 1'b0;
+	eep_set_en = 0;
+	tx_set_en = 0;
+	dump_set_en = 0;
+	dec_set_en = 0;
+	trig_pos_set_en = 0;
+	trig_set_en = 0;
 	nxt_state = IDLE;
 	
 	case (state)
@@ -79,7 +125,7 @@ always_comb begin
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
  * DONE															 *
- * CMD: 8?h01 8?b000000cc 8?hxx				 			 *
+ * CMD: 8?h01 8?b000000cc 8?hxx				 			 		 *
  *																 *
  * Dump channel command. Channel to dump to UART is specified in *
  *  the lower 2-bits of thetrmt = 1'b1; 2nd byte. cc=00 implies channel 1,   *
@@ -88,7 +134,8 @@ always_comb begin
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 				8'hx1:	begin
 							if( cmd[9:8] != 2'b11 ) begin
-								dump_chan = cmd[9:8];
+								dump_chan_set = cmd[9:8];
+								dump_set_en = 1;
 								dump_en = 1'b1;
 							end
 							nxt_state = IDLE;
@@ -96,7 +143,7 @@ always_comb begin
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
  * DONE															 *
- * CMD: 8?h02 8?b000gggcc 8?hxx							 *
+ * CMD: 8?h02 8?b000gggcc 8?hxx							 		 *
  *																 *
  * Configure analog gain of channel (this would correspond to 	 *
  *  volts/div on an opamp). Channel to set gain on is specified  *
@@ -129,10 +176,10 @@ always_comb begin
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
  * DONE															 *
- * CMD: 8?h03 8?hxx 8?hLL								 *
+ * CMD: 8?h03 8?hxx 8?hLL								 		 *
  *																 *
  * Set trigger level. This command is used to set the trigger 	 *
- *  level. The value in the 3rd byte (8?hLL) determines the	 *
+ *  level. The value in the 3rd byte (8?hLL) determines the	 	 *
  *  trigger level. Only values between 46 and 201 are valid. 	 *
  *																 *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
@@ -154,7 +201,7 @@ always_comb begin
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
  * DONE 														 *
- * CMD: 8?h04 8?h0U 8?hLL								 *
+ * CMD: 8?h04 8?h0U 8?hLL								 		 *
  *																 *
  * Write the trigger position register. Determines how many 	 *
  *  samples to capture after the trigger occurs. This is a 9-bit *
@@ -162,26 +209,28 @@ always_comb begin
  *																 *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 				8'hx4:	begin
-							trig_pos = cmd[8:0];
+							trig_pos_set = cmd[8:0];
+							trig_pos_set_en = 1;
 							nxt_state = IDLE;
 						end
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
  * DONE															 *
- * CMD: 8?h05 8?hxx 8?h0L								 *
+ * CMD: 8?h05 8?hxx 8?h0L								 		 *
  *																 *
  * Set decimator (essentially the sample rate). A 4-bit value is *
  *  specified in bits[3:0] of the 3rd byte.						 *
  *																 *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 				8'hx5:	begin
-							decimator = cmd[3:0]; // Need to find out where to set this to
+							decimator_set = cmd[3:0];
+							dec_set_en = 1;
 							nxt_state = IDLE;
 						end
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
  * DONE															 *
- * CMD: 8?h06 8?b00dettcc 8?hxx							 *
+ * CMD: 8?h06 8?b00dettcc 8?hxx							 		 *
  *																 *
  * Write trig_cfg register. This command is used to clear the 	 *
  *  capture_done bit (bit[5] = d). This command is also used to  *
@@ -189,27 +238,29 @@ always_comb begin
  *																 *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 				8'hx6:	begin
-							trig_cfg[5:0] = cmd[13:8];
+							trig_cfg_set[5:0] = cmd[13:8];
+							trig_set_en = 1;
 							nxt_state = IDLE;
 						end
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
  * DONE															 *
- * CMD: 8?h07 8?hxx 8?hxx							 	 *
+ * CMD: 8?h07 8?hxx 8?hxx							 	 	 	 *
  *																 *
  * Read trig_cfg register. The trig_cfg register 				 *
  *  (described below) is sent out the UART.	 					 *
  *																 *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 				8'hx7:	begin
-							tx_data = {2'b00, trig_cfg[5:0]};
+							tx_data_set = {2'b00, trig_cfg[5:0]};
+							tx_set_en = 1;
 							trmt = 1'b1; //Might need extra state to wait for done
 							nxt_state = IDLE;
 						end
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
  * DONE															 *
- * CMD: 8?h08 8?b00aaaaaa 8?hVV 						 *
+ * CMD: 8?h08 8?b00aaaaaa 8?hVV 						 		 *
  *																 *
  * Write location specified by 6-bit address of calibration 	 *
  *  EEPROM with data specified in the 3rd byte.					 *
@@ -224,7 +275,7 @@ always_comb begin
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
  * DONE											 				 *
- * CMD: 8?h09 8?b00aaaaaa 8?hxx 		 				 *
+ * CMD: 8?h09 8?b00aaaaaa 8?hxx 		 				 		 *
  *												 				 *
  * Read calibration EEPROM location specified by 6-bit addres	 *
  *												 				 *
@@ -253,7 +304,8 @@ always_comb begin
 				end
 		else	begin
 					//read data
-					 EEP_cfg_data = EEP_data;
+					EEP_cfg_data_set = EEP_data;
+					eep_set_en = 1;
 					nxt_state = IDLE;
 				end
 	endcase
