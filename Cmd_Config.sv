@@ -1,6 +1,6 @@
 module Cmd_Config(clk, rst_n, SPI_data, wrt_SPI, ss, SPI_done, EEP_data,
-			 cmd, cmd_rdy, clr_cmd_rdy, resp_data, send_resp, resp_sent, trmt, tx_data, 
-			decimator, dump_chan, dump_en, og1, og2, og3, trig_cfg, trig_pos, EEP_cfg_data, eep_done, gain_addr);
+			 cmd, cmd_rdy, clr_cmd_rdy, resp_data, send_resp, resp_sent,
+			decimator, dump_chan, dump_en, trig_cfg, trig_pos, EEP_cfg_data, eep_done, gain_addr);
 
 
 
@@ -16,29 +16,29 @@ input logic [23:0] cmd;
 /////////////////////////////////////////
 // 		 Outputs 	                  //
 ///////////////////////////////////////
-output logic wrt_SPI, clr_cmd_rdy, send_resp, trmt, dump_en, eep_done;
+output logic wrt_SPI, clr_cmd_rdy, send_resp, dump_en, eep_done;
 
 output logic [1:0] dump_chan;
 output logic [2:0] ss, gain_addr;
 output logic [3:0] decimator;
 
 output logic [5:0] trig_cfg;
-output logic [7:0] resp_data, tx_data, EEP_cfg_data;
+output logic [7:0] resp_data, EEP_cfg_data;
 output logic [8:0] trig_pos;
-output logic [15:0] SPI_data, og1, og2, og3;
+output logic [15:0] SPI_data;
 
 
 /////////////////////////////////////////
 // 		 Internals 	                    //
 ///////////////////////////////////////
-logic [7:0] EEP_cfg_data_set, tx_data_set;
-logic [1:0] dump_chan_set;
-logic [8:0] trig_pos_set;
-logic [3:0] decimator_set;
-logic [5:0] trig_cfg_set;
-logic [2:0] gain;
+//logic [7:0] EEP_cfg_data_set, tx_data_set;
+//logic [1:0] dump_chan_set;
+//logic [8:0] trig_pos_set;
+//logic [3:0] decimator_set;
+//logic [5:0] trig_cfg_set;
 
-logic eep_set_en, tx_set_en, dump_set_en, dec_set_en, trig_pos_set_en, trig_set_en, gain_addr_en;
+logic eep_set, tx_set, dec_set, dump_chan_set, dec_set_en, trig_pos_set, 
+							trig_set, gain_addr_set;
 
 ///////////////////////////////////////////
 // Define the two states of the FSM     //
@@ -56,49 +56,49 @@ always_ff @(posedge clk, negedge rst_n)
     	state <= nxt_state;
 
 always_ff @(posedge clk)
-	if(eep_set_en)
-		EEP_cfg_data <= EEP_cfg_data_set;
+	if(eep_set)
+		EEP_cfg_data <= EEP_data;
 	else
 		EEP_cfg_data <= EEP_cfg_data;
 
 always_ff @(posedge clk)
-	if(tx_set_en)
-		tx_data <= tx_data_set;
+	if(tx_set)
+		resp_data <= {2'b00, trig_cfg[5:0]};
 	else
-		tx_data <= tx_data;
+		resp_data <= resp_data;
 
 always_ff @(posedge clk)
-	if(dump_set_en)
-		dump_chan <= dump_chan_set;
+	if(dump_chan_set)
+		dump_chan <= cmd[9:8];
 	else
 		dump_chan <= dump_chan;
 
 always_ff @(posedge clk)
-	if(trig_pos_set_en)
-		trig_pos <= trig_pos_set;
+	if(trig_pos_set)
+		trig_pos <= cmd[8:0];
 	else
 		trig_pos <= trig_pos;
 
 always_ff @(posedge clk)
-	if(dec_set_en)
-		decimator <= decimator_set;
+	if(dec_set)
+		decimator <= cmd[3:0];
 	else
 		decimator <= decimator;
 
 always_ff @(posedge clk)
-	if(trig_set_en)
-		trig_cfg <= trig_cfg_set;
+	if(trig_set)
+		trig_cfg <= cmd[13:8];
 	else
 		trig_cfg <= trig_cfg;
 
 always_ff @(posedge clk)
-	if(gain_addr_en)
-		gain_addr <= gain;
+	if(gain_addr_set)
+		gain_addr <= cmd[12:10];
 	else
 		gain_addr <= gain_addr;
 
 always_ff @(posedge clk)
-	eep_done <= eep_set_en;
+	eep_done <= eep_set;
 
 ///////////////////////////////////////////////////
 // Logic to determine next state and outputs    //
@@ -109,14 +109,14 @@ always_comb begin
 	wrt_SPI = 0;
 	SPI_data = 16'hxxxx;
 	dump_en = 1'b0;
- 	trmt = 1'b0;
-	eep_set_en = 0;
-	tx_set_en = 0;
-	dump_set_en = 0;
-	dec_set_en = 0;
-	trig_pos_set_en = 0;
-	trig_set_en = 0;
-	gain_addr_en = 0;
+ 	send_resp = 1'b0;
+	eep_set = 0;
+	tx_set = 0;
+	dump_chan_set = 0;
+	dec_set = 0;
+	trig_pos_set = 0;
+	trig_set = 0;
+	gain_addr_set = 0;
 	nxt_state = IDLE;
 	
 	case (state)
@@ -145,8 +145,8 @@ always_comb begin
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 				8'hx1:	begin
 							if( cmd[9:8] != 2'b11 ) begin
-								dump_chan_set = cmd[9:8];
-								dump_set_en = 1;
+								//dump_chan_set = cmd[9:8];
+								dump_chan_set = 1;
 								dump_en = 1'b1;
 							end
 							nxt_state = IDLE;
@@ -182,8 +182,8 @@ always_comb begin
 								default: SPI_data = 16'h0000;
 							endcase
 							wrt_SPI = 1;
-							gain = cmd[12:10];
-							gain_addr_en = 1;
+							//gain = cmd[12:10];
+							gain_addr_set = 1;
 							nxt_state = IDLE;
 						end
 
@@ -222,8 +222,8 @@ always_comb begin
  *																 *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 				8'hx4:	begin
-							trig_pos_set = cmd[8:0];
-							trig_pos_set_en = 1;
+							//trig_pos_set = cmd[8:0];
+							trig_pos_set = 1;
 							nxt_state = IDLE;
 						end
 
@@ -236,8 +236,8 @@ always_comb begin
  *																 *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 				8'hx5:	begin
-							decimator_set = cmd[3:0];
-							dec_set_en = 1;
+							//decimator_set = cmd[3:0];
+							dec_set = 1;
 							nxt_state = IDLE;
 						end
 
@@ -251,8 +251,8 @@ always_comb begin
  *																 *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 				8'hx6:	begin
-							trig_cfg_set[5:0] = cmd[13:8];
-							trig_set_en = 1;
+							//trig_cfg_set[5:0] = cmd[13:8];
+							trig_set = 1;
 							nxt_state = IDLE;
 						end
 
@@ -265,9 +265,9 @@ always_comb begin
  *																 *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 				8'hx7:	begin
-							tx_data_set = {2'b00, trig_cfg[5:0]};
-							tx_set_en = 1;
-							trmt = 1'b1; //Might need extra state to wait for done
+							//tx_data_set = {2'b00, trig_cfg[5:0]};
+							tx_set = 1;
+							send_resp = 1'b1; //Might need extra state to wait for done
 							nxt_state = IDLE;
 						end
 
@@ -317,8 +317,8 @@ always_comb begin
 				end
 		else	begin
 					//read data
-					EEP_cfg_data_set = EEP_data;
-					eep_set_en = 1;
+					//EEP_cfg_data_set = EEP_data;
+					eep_set = 1;
 					nxt_state = IDLE;
 				end
 	endcase

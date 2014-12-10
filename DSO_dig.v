@@ -20,7 +20,7 @@ module DSO_dig(clk,rst_n,adc_clk,ch1_data,ch2_data,ch3_data,trig1,trig2,MOSI,MIS
   // Define any wires needed for interconnect here //
   //////////////////////////////////////////////////
   wire wrt_spi;
-  wire spi_cmd;
+  wire [15:0] spi_cmd;
   wire spi_SS_n;
   wire spi_done;
   wire spi_data;
@@ -42,8 +42,9 @@ module DSO_dig(clk,rst_n,adc_clk,ch1_data,ch2_data,ch3_data,trig1,trig2,MOSI,MIS
 	wire [2:0]ss;
 	wire [7:0] EEP_data;
 	wire [8:0] resp_data;
-	wire sent_resp;
+	wire send_resp;
 	wire resp_sent;
+	wire [7:0] ch1_rdata, ch2_rdata, ch3_rdata;
 
 	
 
@@ -68,7 +69,7 @@ module DSO_dig(clk,rst_n,adc_clk,ch1_data,ch2_data,ch3_data,trig1,trig2,MOSI,MIS
   ///////////////////////////////////
   // Instantiate UART_comm module //
   /////////////////////////////////
-	UART_comm iUART_c(.clk(clk), .rst_n(rst_n), .clr_cmd_rdy(clr_cmd_rdy), .trmt(trmt),
+	UART_comm iUART_c(.clk(clk), .rst_n(rst_n), .clr_cmd_rdy(clr_cmd_rdy), .trmt(send_resp),
 					.tx_data(tx_data), .RX(RX), .cmd_rdy(cmd_rdy), .cmd(cmd), .tx_done(tx_done), .TX(TX));
 
   ///////////////////////////
