@@ -23,7 +23,7 @@ module DSO_dig(clk,rst_n,adc_clk,ch1_data,ch2_data,ch3_data,trig1,trig2,MOSI,MIS
   wire [15:0] spi_cmd;
   wire spi_SS_n;
   wire spi_done;
-  wire spi_data;
+  wire [15:0] spi_data;
 
 	wire [8:0] addr;
 	wire en;
@@ -41,7 +41,7 @@ module DSO_dig(clk,rst_n,adc_clk,ch1_data,ch2_data,ch3_data,trig1,trig2,MOSI,MIS
 	wire SPI_done;
 	wire [2:0]ss;
 	wire [7:0] EEP_data;
-	wire [8:0] resp_data;
+	wire [7:0] resp_data;
 	wire send_resp;
 	wire resp_sent;
 	wire [7:0] ch1_rdata, ch2_rdata, ch3_rdata;

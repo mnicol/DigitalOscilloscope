@@ -7,7 +7,7 @@ read_file -format sverilog { ./UART_tx.sv\
                              ./UART.sv\
                              ./UART_comm.sv\
                              ./RAM_Interface.sv\
-                             ./RAM512.v\
+                             ./RAM512_shell.v\
                              ./dig_core.v\
                              ./Cmd_Config.sv\
                              ./Analog_Interface.sv\

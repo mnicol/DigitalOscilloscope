@@ -68,7 +68,7 @@ always_ff @(posedge clk)
 		resp_data <= resp_data;
 
 always_ff @(posedge clk)
-	if(dump_set)
+	if(dump_chan_set)
 		dump_chan <= cmd[9:8];
 	else
 		dump_chan <= dump_chan;

@@ -22,7 +22,7 @@ output logic [1:0] dump_chan;
 output logic [2:0] ss, gain_addr;
 output logic [3:0] decimator;
 
-output logic [5:0] trig_cfg;
+output logic [7:0] trig_cfg;
 output logic [7:0] resp_data, EEP_cfg_data;
 output logic [8:0] trig_pos;
 output logic [15:0] SPI_data;
@@ -63,7 +63,7 @@ always_ff @(posedge clk)
 
 always_ff @(posedge clk)
 	if(tx_set)
-		resp_data <= {2'b00, trig_cfg[5:0]};
+		resp_data <= trig_cfg;
 	else
 		resp_data <= resp_data;
 
@@ -87,7 +87,7 @@ always_ff @(posedge clk)
 
 always_ff @(posedge clk)
 	if(trig_set)
-		trig_cfg <= cmd[13:8];
+		trig_cfg[5:0] <= cmd[13:8];
 	else
 		trig_cfg <= trig_cfg;
 
