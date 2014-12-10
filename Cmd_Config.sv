@@ -1,6 +1,6 @@
 module Cmd_Config(clk, rst_n, SPI_data, wrt_SPI, ss, SPI_done, EEP_data,
 			 cmd, cmd_rdy, clr_cmd_rdy, resp_data, send_resp, resp_sent, trmt, tx_data, 
-			decimator, dump_chan, dump_en, og1, og2, og3, trig_cfg, trig_pos, EEP_cfg_data);
+			decimator, dump_chan, dump_en, og1, og2, og3, trig_cfg, trig_pos, EEP_cfg_data, eep_done);
 
 
 
@@ -16,7 +16,7 @@ input logic [23:0] cmd;
 /////////////////////////////////////////
 // 		 Outputs 	                  //
 ///////////////////////////////////////
-output logic wrt_SPI, clr_cmd_rdy, send_resp, trmt, dump_en;
+output logic wrt_SPI, clr_cmd_rdy, send_resp, trmt, dump_en, eep_done;
 
 output logic [1:0] dump_chan;
 output logic [2:0] ss;
@@ -36,8 +36,9 @@ logic [1:0] dump_chan_set;
 logic [8:0] trig_pos_set;
 logic [3:0] decimator_set;
 logic [5:0] trig_cfg_set;
+logic [2:0] gain_addr, gain;
 
-logic eep_set_en, tx_set_en, dump_set_en, dec_set_en, trig_pos_set_en, trig_set_en;
+logic eep_set_en, tx_set_en, dump_set_en, dec_set_en, trig_pos_set_en, trig_set_en, gain_addr_en;
 
 ///////////////////////////////////////////
 // Define the two states of the FSM     //
@@ -88,7 +89,16 @@ always_ff @(posedge clk)
 	if(trig_set_en)
 		trig_cfg <= trig_cfg_set;
 	else
-		trig_cfg <= trig_cfg;	
+		trig_cfg <= trig_cfg;
+
+always_ff @(posedge clk)
+	if(gain_addr_en)
+		gain_addr <= gain;
+	else
+		gain_addr <= gain_addr;
+
+always_ff @(posedge clk)
+	eep_done <= eep_set_en;
 
 ///////////////////////////////////////////////////
 // Logic to determine next state and outputs    //
@@ -106,6 +116,7 @@ always_comb begin
 	dec_set_en = 0;
 	trig_pos_set_en = 0;
 	trig_set_en = 0;
+	gain_addr_en = 0;
 	nxt_state = IDLE;
 	
 	case (state)
@@ -171,6 +182,8 @@ always_comb begin
 								default: SPI_data = 16'h0000;
 							endcase
 							wrt_SPI = 1;
+							gain = cmd[12:10];
+							gain_addr_en = 1;
 							nxt_state = IDLE;
 						end
 

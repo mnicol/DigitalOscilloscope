@@ -16,7 +16,7 @@ input logic [23:0] cmd;
 /////////////////////////////////////////
 // 		 Outputs 	                  //
 ///////////////////////////////////////
-output logic wrt_SPI, clr_cmd_rdy, send_resp, trmt, dump_en;
+output logic wrt_SPI, clr_cmd_rdy, send_resp, trmt, dump_en, eep_done;
 
 output logic [1:0] dump_chan;
 output logic [2:0] ss;
@@ -36,8 +36,9 @@ logic [1:0] dump_chan_set;
 logic [8:0] trig_pos_set;
 logic [3:0] decimator_set;
 logic [5:0] trig_cfg_set;
+logic [2:0] gain_addr, gain;
 
-logic eep_set_en, tx_set_en, dump_set_en, dec_set_en, trig_pos_set_en, trig_set_en;
+logic eep_set_en, tx_set_en, dump_set_en, dec_set_en, trig_pos_set_en, trig_set_en, gain_addr_en;
 
 ///////////////////////////////////////////
 // Define the two states of the FSM     //
@@ -88,7 +89,16 @@ always_ff @(posedge clk)
 	if(trig_set_en)
 		trig_cfg <= trig_cfg_set;
 	else
-		trig_cfg <= trig_cfg;	
+		trig_cfg <= trig_cfg;
+
+always_ff @(posedge clk)
+	if(gain_addr_en)
+		gain_addr <= gain;
+	else
+		gain_addr <= gain_addr;
+
+always_ff @(posedge clk)
+	eep_done <= eep_set_en;
 
 ///////////////////////////////////////////////////
 // Logic to determine next state and outputs    //
@@ -106,6 +116,7 @@ always_comb begin
 	dec_set_en = 0;
 	trig_pos_set_en = 0;
 	trig_set_en = 0;
+	gain_addr_en = 0;
 	nxt_state = IDLE;
 	
 	case (state)
@@ -171,6 +182,8 @@ always_comb begin
 								default: SPI_data = 16'h0000;
 							endcase
 							wrt_SPI = 1;
+							gain = cmd[12:10];
+							gain_addr_en = 1;
 							nxt_state = IDLE;
 						end
 
@@ -260,7 +273,7 @@ always_comb begin
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
  * DONE															 *
- * CMD: 8?h08 8?b00aaaaaa 8?hVV 						 *
+ * CMD: 8?h08 8?b00aaaaaa 8?hVV 						 		 *
  *																 *
  * Write location specified by 6-bit address of calibration 	 *
  *  EEPROM with data specified in the 3rd byte.					 *
@@ -275,7 +288,7 @@ always_comb begin
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
  * DONE											 				 *
- * CMD: 8?h09 8?b00aaaaaa 8?hxx 		 				 *
+ * CMD: 8?h09 8?b00aaaaaa 8?hxx 		 				 		 *
  *												 				 *
  * Read calibration EEPROM location specified by 6-bit addres	 *
  *												 				 *
@@ -304,7 +317,8 @@ always_comb begin
 				end
 		else	begin
 					//read data
-					 EEP_cfg_data_set = EEP_data;
+					EEP_cfg_data_set = EEP_data;
+					eep_set_en = 1;
 					nxt_state = IDLE;
 				end
 	endcase
