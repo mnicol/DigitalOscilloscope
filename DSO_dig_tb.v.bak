@@ -137,12 +137,12 @@ initial begin
 
 ////////send dump////////
 	//DUMP_CH    	// Channel to dump specified in low 2-bits of second byte
-	send_full_cmd({DUMP_CH, 8'b0000_00cc, 8'hFF});
+	send_full_cmd({DUMP_CH, 8'hFF, 8'hFF});
 
 
 ////////Wait for dump to finish////////
 	//TRIG_RD    	// Read trig config register
-	send_full_cmd({TRIG_RD, 8'hBA, 8'hE0});
+	send_full_cmd({TRIG_RD, 8'hFF, 8'hFF});
 
 end
 
