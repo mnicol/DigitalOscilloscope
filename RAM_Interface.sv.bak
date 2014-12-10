@@ -1,4 +1,4 @@
-module RAM_Interface(clk, trace_end, cap_en, cap_addr, dump_en, dump_chan, we, 
+module RAM_Interface(clk, rst_n, trace_end, cap_en, cap_addr, dump_en, dump_chan, we, 
 										ch1_rdata, ch2_rdata, ch3_rdata, og1, og2, og3, addr, en,
 										ram_trmt, tx_done, ram_tx_data);
 

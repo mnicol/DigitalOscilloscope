@@ -57,11 +57,11 @@ module DSO_dig(clk,rst_n,adc_clk,ch1_data,ch2_data,ch3_data,trig1,trig2,MOSI,MIS
   // 5 individual SS needed (3 AFE, 1 Trigger, 1 EEP)       //
   ///////////////////////////////////////////////////////////
 
-assign trig_ss_n = (ss == 3'b000) ? spi_SS_n : 1'b1;
-assign ch1_ss_n = (ss == 3'b001) ? spi_SS_n : 1'b1;
-assign ch2_ss_n = (ss == 3'b010) ? spi_SS_n : 1'b1;
-assign ch3_ss_n = (ss == 3'b011) ? spi_SS_n : 1'b1;
-assign EEP_ss_n = (ss == 3'b100) ? spi_SS_n : 1'b1;
+	assign trig_ss_n = (ss == 3'b000) ? spi_SS_n : 1'b1;
+	assign ch1_ss_n = (ss == 3'b001) ? spi_SS_n : 1'b1;
+	assign ch2_ss_n = (ss == 3'b010) ? spi_SS_n : 1'b1;
+	assign ch3_ss_n = (ss == 3'b011) ? spi_SS_n : 1'b1;
+	assign EEP_ss_n = (ss == 3'b100) ? spi_SS_n : 1'b1;
   
   ///////////////////////////////////
   // Instantiate UART_comm module //

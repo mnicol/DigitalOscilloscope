@@ -47,7 +47,7 @@ initial begin
 
 	#10 @(posedge iAI.armed) trig1 = 1;
 	#(4 * clk_period);
-	@(posedge clk) if (iAI.triggered != 1) $display("Error: trigger not set."); else $display("gg1");
+	@(posedge clk) if (iAI.triggered != 1) $display("Error: trigger not set."); else $display("gg3");
 
 	#10 @(posedge iAI.armed) $stop;
 end

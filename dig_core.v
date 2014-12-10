@@ -44,6 +44,7 @@ module dig_core(clk,rst_n,adc_clk,trig1,trig2,SPI_data,wrt_SPI,SPI_done,ss,EEP_d
 	assign tx_data = cmd_trmt ? cmd_tx_data : ram_tx_data;
 	assign trmt = cmd_trmt | ram_trmt;
 	
+	
  
   ///////////////////////////////////////////////////////
   // Instantiate the blocks of your digital core next //
@@ -55,7 +56,7 @@ Analog_Interface iAnaI(.clk(clk), .adc_clk(adc_clk), .rst_n(rst_n), .trig1(trig1
 RAM_Interface iRAMI(.clk(clk), .rst_n(rst_n), .trace_end(trace_end), .cap_en(cap_en),
 			.cap_addr(cap_addr), .dump_en(dump_en), .dump_chan(dump_chan), .we(we), .ch1_rdata(ch1_rdata),
 			.ch2_rdata(ch2_rdata), .ch3_rdata(ch3_rdata), .og1(og1), .og2(og2), .og3(og3), .addr(addr),
-			.en(en), .ram_trmt(ram_trmt), .tx_done(resp_sent), .ram_tx_data(ram_tx_data));
+			.en(en), .ram_trmt(ram_trmt), .tx_done(resp_sent), .ram_tx_data(ram_tx_data), .rclk(rclk));
 
 Cmd_Config iCC(.clk(clk), .rst_n(rst_n), .SPI_data(SPI_data), .wrt_SPI(wrt_SPI), .ss(ss),
 			.SPI_done(SPI_done), .EEP_data(EEP_data), .cmd(cmd), .cmd_rdy(cmd_rdy),

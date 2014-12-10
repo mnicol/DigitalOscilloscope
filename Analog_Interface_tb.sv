@@ -21,11 +21,6 @@ parameter clk_period = 2'd2;
 initial clk = 1;
 always #1 clk = !clk;
 
-///////////////////////////
-// Initialize clk				//
-/////////////////////////
-initial adc_clk = 0;
-always #2 adc_clk = !adc_clk;
 
 initial begin
 	rst_n = 0;

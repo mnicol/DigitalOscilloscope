@@ -5,7 +5,7 @@ module RAM_Interface(clk, rst_n, trace_end, cap_en, cap_addr, dump_en, dump_chan
 /////////////////////////////////////////
 // 		 Inputs 	                      //
 ///////////////////////////////////////
-input logic clk, cap_en, dump_en, we, tx_done;
+input logic clk, rst_n, cap_en, dump_en, we, tx_done;
 input logic [8:0] trace_end, cap_addr;
 input logic [1:0] dump_chan;
 input logic [7:0] ch1_rdata, ch2_rdata, ch3_rdata;

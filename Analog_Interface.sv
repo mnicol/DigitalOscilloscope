@@ -1,11 +1,11 @@
-module Analog_Interface(clk, adc_clk, rst_n, trig1, trig2, decimator, 
-							trig_cfg, trig_pos, set_cap_done, en, we, addr, trace_end);
+module Analog_Interface(clk, adc_clk, rst_n, trig1, trig2, decimator, trig_cfg,
+									trig_pos, set_cap_done, en, we, addr, trace_end, rclk);
 
 
 /////////////////////////////////////////
 // 		 Inputs 	                      //
 ///////////////////////////////////////
-input logic clk, adc_clk, rst_n, trig1, trig2;
+input logic clk, rst_n, trig1, trig2;
 input logic [7:0] trig_cfg;
 input logic [8:0] trig_pos;
 input logic [3:0] decimator;
@@ -13,7 +13,7 @@ input logic [3:0] decimator;
 /////////////////////////////////////////
 // 		 Outputs 	                      //
 ///////////////////////////////////////
-output logic en, we, set_cap_done;
+output logic en, we, set_cap_done, adc_clk, rclk;
 output logic [8:0] addr, trace_end;
 
 /////////////////////////////////////////
@@ -37,6 +37,17 @@ assign trig_edge = trig_cfg[4];			// 1 for posedge, 0 for negedge
 	assign normal = trig_cfg[2];
 	assign trig_en = auto | normal;
 assign trig_src = trig_cfg[0];			// 0 for ch1, 1 for ch2
+
+/////////////////////////////////////////
+// 		 Generate Clocks                //
+///////////////////////////////////////
+always @(posedge clk, negedge rst_n) begin
+	if (!rst_n)
+		adc_clk <= 0;
+	else
+		adc_clk <= ~adc_clk;
+end
+assign rclk = ~adc_clk;
 
 /////////////////////////////////////////
 // 		 States 	                      //

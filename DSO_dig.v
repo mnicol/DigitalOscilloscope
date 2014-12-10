@@ -45,6 +45,8 @@ module DSO_dig(clk,rst_n,adc_clk,ch1_data,ch2_data,ch3_data,trig1,trig2,MOSI,MIS
 	wire sent_resp;
 	wire resp_sent;
 
+	
+
   /////////////////////////////
   // Instantiate SPI master //
   ///////////////////////////
