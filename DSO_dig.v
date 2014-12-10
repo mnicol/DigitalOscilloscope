@@ -33,17 +33,19 @@ module DSO_dig(clk,rst_n,adc_clk,ch1_data,ch2_data,ch3_data,trig1,trig2,MOSI,MIS
 	wire trmt;
 	wire [7:0] tx_data;
 	wire cmd_rdy;
-	wire [15:0] cmd;
+	wire [23:0] cmd;
 	wire tx_done;
 
-	wire [7:0] SPI_data;
+	wire [15:0] SPI_data;
 	wire wrt_SPI;
 	wire SPI_done;
-	wire ss;
+	wire [2:0]ss;
 	wire [7:0] EEP_data;
 	wire [8:0] resp_data;
 	wire sent_resp;
 	wire resp_sent;
+
+	reg [4:0] demux;
 
   /////////////////////////////
   // Instantiate SPI master //
@@ -57,8 +59,21 @@ module DSO_dig(clk,rst_n,adc_clk,ch1_data,ch2_data,ch3_data,trig1,trig2,MOSI,MIS
   // 5 individual SS needed (3 AFE, 1 Trigger, 1 EEP)       //
   ///////////////////////////////////////////////////////////
 
-	
-
+	always @(ss or spi_SS_n) begin
+		case(ss)
+			3'b000:  demux = { spi_SS_n, 4'b1111 };
+			3'b001:  demux = { 1'b1, spi_SS_n, 3'b111 };
+			3'b010:  demux = { 2'b11, spi_SS_n, 2'b11 };
+			3'b011:  demux = { 3'b111, spi_SS_n, 1'b1 };
+			3'b100:  demux = { 4'b1111, spi_SS_n};
+			default: demux = 5'b11111;
+		endcase
+	end
+	assign trig_ss_n = demux[4];
+	assign ch1_ss_n  = demux[3];
+	assign ch2_ss_n  = demux[2];
+	assign ch3_ss_n  = demux[1];
+	assign EEP_ss_n  = demux[0];
 	
   
   ///////////////////////////////////
