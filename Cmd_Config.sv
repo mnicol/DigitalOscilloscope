@@ -61,11 +61,11 @@ always_ff @(posedge clk)
 	else
 		EEP_cfg_data <= EEP_cfg_data;
 
-always_ff @(posedge clk)
-	if(tx_set)
-		resp_data <= trig_cfg;
-	else
-		resp_data <= resp_data;
+//always_ff @(posedge clk)
+//	if(tx_set)
+//		resp_data <= trig_cfg;
+//	else
+//		resp_data <= resp_data;
 
 always_ff @(posedge clk)
 	if(dump_chan_set)
@@ -110,6 +110,7 @@ always_comb begin
 	SPI_data = 16'hxxxx;
 	dump_en = 1'b0;
  	send_resp = 1'b0;
+	resp_data = 8'hA5;
 	eep_set = 0;
 	tx_set = 0;
 	dump_chan_set = 0;
@@ -150,7 +151,7 @@ always_comb begin
 								dump_chan_set = 1;
 								dump_en = 1'b1;
 							end
-							resp_data = acknowledge //default should send error ack
+							//resp_data = 8'hA5; //default should send error ack
 							send_resp = 1;
 							nxt_state = SEND_ACK;
 						end
@@ -187,7 +188,9 @@ always_comb begin
 							wrt_SPI = 1;
 							//gain = cmd[12:10];
 							gain_addr_set = 1;
-							nxt_state = IDLE;
+							//resp_data = 8'hA5; //default should send error ack
+							send_resp = 1;
+							nxt_state = SEND_ACK;
 						end
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
@@ -212,7 +215,9 @@ always_comb begin
 							else
 								SPI_data = {8'h13, cmd[7:0]};
 							wrt_SPI = 1;
-							nxt_state = IDLE;
+							//resp_data = 8'hA5; //default should send error ack
+							send_resp = 1;
+							nxt_state = SEND_ACK;
 						end
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
@@ -227,7 +232,9 @@ always_comb begin
 				8'hx4:	begin
 							//trig_pos_set = cmd[8:0];
 							trig_pos_set = 1;
-							nxt_state = IDLE;
+							//resp_data = 8'hA5; //default should send error ack
+							send_resp = 1;
+							nxt_state = SEND_ACK;
 						end
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
@@ -241,7 +248,9 @@ always_comb begin
 				8'hx5:	begin
 							//decimator_set = cmd[3:0];
 							dec_set = 1;
-							nxt_state = IDLE;
+							//resp_data = 8'hA5; //default should send error ack
+							send_resp = 1;
+							nxt_state = SEND_ACK;
 						end
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
@@ -256,7 +265,9 @@ always_comb begin
 				8'hx6:	begin
 							//trig_cfg_set[5:0] = cmd[13:8];
 							trig_set = 1;
-							nxt_state = IDLE;
+							//resp_data = 8'hA5; //default should send error ack
+							send_resp = 1;
+							nxt_state = SEND_ACK;
 						end
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
@@ -270,6 +281,7 @@ always_comb begin
 				8'hx7:	begin
 							//tx_data_set = {2'b00, trig_cfg[5:0]};
 							tx_set = 1;
+							resp_data = {2'b00, trig_cfg[5:0]};
 							send_resp = 1'b1; //Might need extra state to wait for done
 							nxt_state = IDLE;
 						end
@@ -286,7 +298,8 @@ always_comb begin
 							ss = 3'b100;	// Select EEPROM
 							SPI_data = {2'b01, cmd[13:0]};
 							wrt_SPI = 1;
-							nxt_state = IDLE;
+							send_resp = 1;
+							nxt_state = SEND_ACK;
 						end
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
@@ -308,7 +321,11 @@ always_comb begin
  * Default Case:  If invalid opcode is received do nothing		 *
  *																 *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
-				default: nxt_state = IDLE;
+				default: begin 
+							resp_data = 8'hEE;
+							send_resp = 1;
+							nxt_state = SEND_ACK;
+					end
 
 			endcase
 		end
