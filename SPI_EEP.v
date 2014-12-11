@@ -49,7 +49,7 @@ always @(*)
 			    nstate = WRITE;
 			  end			  
 			  default : begin
-			    $display("ERROR: command to cal EEP has unknown opcode bits");
+			    //$display("ERROR: command to cal EEP has unknown opcode bits");
 				nstate = IDLE;
 			  end
 			endcase

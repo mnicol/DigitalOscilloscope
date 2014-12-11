@@ -27,7 +27,7 @@ UART_comm iUART_comm(.clk(clk), .rst_n(rst_n), .clr_cmd_rdy(clr_cmd_rdy), .trmt(
 // Instantiate tester UART transceiver for sending bytes to UART_comm    //
 //////////////////////////////////////////////////////////////////////////
 UART iUART_txrx(.clk(clk), .rst_n(rst_n), .tx_data(tx_data_tst), .trmt(trmt_tst), .TX(TX_tst), 
-			.tx_done(tx_done_tst), .RX(TX), .clr_rdy(clr_rdy_tst), .rx_data(rx_data_tst), .rdy(rdy_tst));
+			.tx_done(tx_done_tst), .RX(RX_tst), .clr_rdy(clr_rdy_tst), .rx_data(rx_data_tst), .rdy(rdy_tst));
 
 
 //UART_comm iUART_txrx(.clk(clk), .rst_n(rst_n), .tx_data(tx_data_tst), .trmt(trmt_tst), .TX(TX_tst), 

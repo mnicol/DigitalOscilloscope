@@ -43,7 +43,7 @@ logic eep_set, tx_set, dec_set, dump_chan_set, dec_set_en, trig_pos_set,
 ///////////////////////////////////////////
 // Define the two states of the FSM     //
 /////////////////////////////////////////
-typedef enum reg [1:0] {IDLE, PROC_CMD, RX_SPI}state_t;
+typedef enum reg [1:0] {IDLE, PROC_CMD, RX_SPI, SEND_ACK}state_t;
 state_t state, nxt_state;
 
 ///////////////////////////
@@ -117,6 +117,7 @@ always_comb begin
 	trig_pos_set = 0;
 	trig_set = 0;
 	gain_addr_set = 0;
+	send_resp = 1;
 	nxt_state = IDLE;
 	
 	case (state)
@@ -149,7 +150,9 @@ always_comb begin
 								dump_chan_set = 1;
 								dump_en = 1'b1;
 							end
-							nxt_state = IDLE;
+							resp_data = acknowledge //default should send error ack
+							send_resp = 1;
+							nxt_state = SEND_ACK;
 						end
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
@@ -321,6 +324,18 @@ always_comb begin
 					eep_set = 1;
 					nxt_state = IDLE;
 				end
+
+
+		SEND_ACK: if(!resp_sent)
+			begin
+				
+				nxt_state = SEND_ACK;
+			end
+		else begin
+				nxt_state = IDLE;
+			end
+
+
 	endcase
 end
 

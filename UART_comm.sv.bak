@@ -25,7 +25,7 @@ state_t state, nxt_state;
 // Instantiate the UART transceiver   //
 ///////////////////////////////////////
 UART UART_txrx(.clk(clk), .rst_n(rst_n), .tx_data(tx_data), .trmt(trmt), .TX(TX), 
-				.tx_done(tx_done), .RX(RX), .clr_rdy(clr_rdy), .rx_data(rx_data), .rdy(rdy));
+							.tx_done(tx_done), .RX(RX), .clr_rdy(clr_rdy), .rx_data(rx_data), .rdy(rdy));
 
 
 ////////////////////////////////////////////////////////////

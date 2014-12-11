@@ -21,6 +21,7 @@ wire [7:0] ch1_data,ch2_data,ch3_data;
 wire trig1,trig2;
 
 integer fd;
+integer temp = 0;
 
 ///////////////////////////
 // Define command bytes //
@@ -67,6 +68,7 @@ SPI_EEP iEEP(.clk(clk),.rst_n(rst_n),.SS_n(EEP_ss_n),.SCLK(SCLK),.MOSI(MOSI),.MI
 //Function to send 3 byte commands via the uart to the dso dig
 task send_full_cmd(input [23:0] full_cmd);
 begin
+
 	//Send the first byte (upper Byte)
 		@(posedge clk)
 			tx_data = full_cmd [23:16];
@@ -74,7 +76,7 @@ begin
 		@(posedge clk)
 			trmt = 1'b1;
 
-		@(negedge clk)
+		@(posedge clk)
 			trmt = 1'b0;
 
 		@(posedge tx_done)
@@ -88,12 +90,11 @@ begin
 		@(posedge clk)
 			trmt = 1'b1;
 
-		@(negedge clk)
+		@(posedge clk)
 			trmt = 1'b0;
 
 		@(posedge tx_done)
-			#1; //ready for next byte
-			 
+			#1; //ready for next byte 
 
 	//Send the final byte (lower Byte)
 		@(posedge clk)
@@ -102,7 +103,7 @@ begin
 		@(posedge clk)
 			trmt = 1'b1;
 
-		@(negedge clk)
+		@(posedge clk)
 			trmt = 1'b0;
 
 		@(posedge tx_done)
@@ -112,12 +113,14 @@ end
 endtask
 
 
-
 initial begin
 	clk = 0;
 	rst_n = 0;			// assert reset
 	clr_resp_rdy = 1'b0;
 	trmt = 1'b0;
+
+	#1;
+	@(negedge clk) rst_n = 1;
 
 ////////setup////////
 
@@ -288,18 +291,23 @@ initial begin
 
 	repeat (510) 
 	begin
-		if(!resp_rdy)
-        	@(posedge resp_rdy)
+		temp = temp + 1;
+		$display("Dumping Data(%d) %h", temp, iUARTMSTR.rx_data);
 
-		$fdisplay(fd, "%h", iUARTMSTR.rx_data);//store rx_data to file or check to see if it's the right value?
+		if(!iUARTMSTR.UART_txrx.UART_tx.tx_done)
+        	@(posedge iUARTMSTR.UART_txrx.UART_tx.tx_done)
+		$display("");
+		$fdisplay(fd, "%h",iUARTMSTR.rx_data);//store rx_data to file or check to see if it's the right value?
 
       	@(negedge clk)  clr_resp_rdy = 1;
       	@(negedge clk)  clr_resp_rdy = 0;
+
   	end
 
 	repeat (30) @(negedge clk); //make sure dump isdone 
 
 	$fclose(fd);
+
 
 	$stop();
 
