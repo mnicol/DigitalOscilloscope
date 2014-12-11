@@ -103,7 +103,7 @@ always @(posedge clk, negedge rst_n)
     state <= nstate;
 	
 initial
-  $readmemh("CAL_EEP.hex",mem);
+  $readmemh("C:/Users/tdvoss/551/DigitalOscilloscope/CAL_EEP.hex",mem);
   
 endmodule
 			 

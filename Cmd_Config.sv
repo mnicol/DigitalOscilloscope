@@ -38,7 +38,7 @@ output logic [15:0] SPI_data;
 //logic [5:0] trig_cfg_set;
 
 logic eep_set, tx_set, dec_set, dump_chan_set, dec_set_en, trig_pos_set, 
-							trig_set, gain_addr_set;
+							trig_set, gain_addr_set, bad_cmd, sending;
 
 ///////////////////////////////////////////
 // Define the two states of the FSM     //
@@ -62,10 +62,22 @@ always_ff @(posedge clk)
 		EEP_cfg_data <= EEP_cfg_data;
 
 //always_ff @(posedge clk)
-//	if(tx_set)
-//		resp_data <= trig_cfg;
+//	if(spi_data_set)
+//		EEP_cfg_data <= EEP_data;
 //	else
-//		resp_data <= resp_data;
+//		EEP_cfg_data <= EEP_cfg_data;
+
+always_ff @(posedge clk)
+	if(eep_set)
+		resp_data <= SPI_data[7:0];
+	else if(tx_set)
+		resp_data <= {2'b00, trig_cfg[5:0]};
+	else if (bad_cmd)
+		resp_data <= 8'hEE;
+	else if (sending)
+		resp_data <= resp_data;
+	else
+		resp_data <= 8'hA5;
 
 always_ff @(posedge clk)
 	if(dump_chan_set)
@@ -105,12 +117,13 @@ always_ff @(posedge clk)
 /////////////////////////////////////////////////
 always_comb begin
 	//Default values
-	ss = 3'b111;
+	ss = ss;
 	wrt_SPI = 0;
-	SPI_data = 16'hxxxx;
+	//SPI_data = 16'hxxxx;
+	SPI_data = SPI_data;
 	dump_en = 1'b0;
  	send_resp = 1'b0;
-	resp_data = 8'hA5;
+	//resp_data = 8'hA5;
 	eep_set = 0;
 	tx_set = 0;
 	dump_chan_set = 0;
@@ -118,7 +131,10 @@ always_comb begin
 	trig_pos_set = 0;
 	trig_set = 0;
 	gain_addr_set = 0;
-	send_resp = 1;
+	//spi_data_set = 0;
+	//send_resp = 1;
+	bad_cmd = 0;
+	sending = 1;
 	nxt_state = IDLE;
 	
 	case (state)
@@ -281,7 +297,7 @@ always_comb begin
 				8'hx7:	begin
 							//tx_data_set = {2'b00, trig_cfg[5:0]};
 							tx_set = 1;
-							resp_data = {2'b00, trig_cfg[5:0]};
+							//resp_data = {2'b00, trig_cfg[5:0]};
 							send_resp = 1'b1; //Might need extra state to wait for done
 							nxt_state = IDLE;
 						end
@@ -312,6 +328,7 @@ always_comb begin
 				8'hx9:	begin
 							ss = 3'b100;	// Select EEPROM
 							SPI_data = {2'b00, cmd[13:8], 8'hxx};
+							//spi_data_set = 1;
 							wrt_SPI = 1;
 							nxt_state = RX_SPI;
 						end
@@ -322,7 +339,8 @@ always_comb begin
  *																 *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 				default: begin 
-							resp_data = 8'hEE;
+							//resp_data = 8'hEE;
+							bad_cmd = 1;
 							send_resp = 1;
 							nxt_state = SEND_ACK;
 					end
@@ -339,13 +357,15 @@ always_comb begin
 					//read data
 					//EEP_cfg_data_set = EEP_data;
 					eep_set = 1;
+					//resp_data = 8'hEE;
+					send_resp = 1;
 					nxt_state = IDLE;
 				end
 
 
 		SEND_ACK: if(!resp_sent)
 			begin
-				
+				sending = 1;
 				nxt_state = SEND_ACK;
 			end
 		else begin

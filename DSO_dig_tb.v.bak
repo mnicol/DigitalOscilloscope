@@ -135,7 +135,7 @@ initial begin
 		end
 	else begin
 			$strobe("--------------------------------------------------------------");
-			$strobe("--     EEPROM Write       -- Pass ----------------------------");
+			$strobe("--     EEPROM Write       -- Pass ----------------------------%tns", $time);
 			$strobe("--------------------------------------------------------------\n");
 		end
 	@(negedge clk)	clr_resp_rdy = 1'b1;
@@ -154,7 +154,7 @@ initial begin
 		end
 	else begin
 			$strobe("--------------------------------------------------------------");
-			$strobe("--      EEPROM Read       -- Pass ----------------------------");
+			$strobe("--      EEPROM Read       -- Pass ----------------------------%tns", $time);
 			$strobe("--------------------------------------------------------------\n");
 		end
 	@(negedge clk)	clr_resp_rdy = 1'b1;
@@ -172,7 +172,7 @@ initial begin
 		end
 	else begin
 			$strobe("--------------------------------------------------------------");
-			$strobe("--   Config Gain Write    -- Pass ----------------------------");
+			$strobe("--   Config Gain Write    -- Pass ---------------------------- %tns", $time);
 			$strobe("--------------------------------------------------------------\n");
 		end
 	@(negedge clk)	clr_resp_rdy = 1'b1;
@@ -190,7 +190,7 @@ initial begin
 		end
 	else begin
 			$strobe("--------------------------------------------------------------");
-			$strobe("--  Trigger Config Write  -- Pass ----------------------------");
+			$strobe("--  Trigger Config Write  -- Pass ---------------------------- %tns", $time);
 			$strobe("--------------------------------------------------------------\n");
 		end
 	@(negedge clk)	clr_resp_rdy = 1'b1;
@@ -208,7 +208,7 @@ initial begin
 		end
 	else begin
 			$strobe("--------------------------------------------------------------");
-			$strobe("--   Trigger Level Write  -- Pass ----------------------------");
+			$strobe("--   Trigger Level Write  -- Pass ---------------------------- %tns", $time);
 			$strobe("--------------------------------------------------------------\n");
 		end
 	@(negedge clk)	clr_resp_rdy = 1'b1;
@@ -231,7 +231,7 @@ initial begin
 		end
 	else begin
 			$strobe("--------------------------------------------------------------");
-			$strobe("-- Trigger Position Write -- Pass ----------------------------");
+			$strobe("-- Trigger Position Write -- Pass ---------------------------- %tns", $time);
 			$strobe("--------------------------------------------------------------\n");
 		end
 	@(negedge clk)	clr_resp_rdy = 1'b1;
@@ -254,7 +254,7 @@ initial begin
 		end
 	else begin
 			$strobe("--------------------------------------------------------------");
-			$strobe("--      Set Decimator     -- Pass ----------------------------");
+			$strobe("--      Set Decimator     -- Pass ---------------------------- %tns", $time);
 			$strobe("--------------------------------------------------------------\n");
 		end
 	@(negedge clk)	clr_resp_rdy = 1'b1;
@@ -268,12 +268,12 @@ initial begin
 	//Check if the config data is correct
 	if(iUARTMSTR.rx_data != 8'b00111000) begin
 			$strobe("--------------------------------------------------------------");
-			$strobe("------------  Trig Read Fail: %h should be 0x38  -----------", iUARTMSTR.rx_data);
+			$strobe("------------  Trig Read Fail: %h should be 0x38  ----------- %tns", iUARTMSTR.rx_data, $time);
 			$strobe("--------------------------------------------------------------\n");
 		end
 	else begin
 			$strobe("--------------------------------------------------------------");
-			$strobe("--       Trig Read        -- Pass ----------------------------");
+			$strobe("--       Trig Read        -- Pass ---------------------------- %tns", $time");
 			$strobe("--------------------------------------------------------------\n");
 		end
 	@(negedge clk)	clr_resp_rdy = 1'b1;
@@ -292,12 +292,12 @@ initial begin
 	repeat (510) 
 	begin
 		temp = temp + 1;
-		$display("Dumping Data(%d) %h", temp, iUARTMSTR.rx_data);
+		//$display("Dumping Data(%d) %h", temp, iUARTMSTR.rx_data);
 
 		if(!iUARTMSTR.UART_txrx.UART_tx.tx_done)
         	@(posedge iUARTMSTR.UART_txrx.UART_tx.tx_done)
 		$display("");
-		$fdisplay(fd, "%d %h",temp, iUARTMSTR.rx_data);//store rx_data to file or check to see if it's the right value?
+		$fdisplay(fd, "%d",iUARTMSTR.rx_data);//store rx_data to file or check to see if it's the right value?
 
       	@(negedge clk)  clr_resp_rdy = 1;
       	@(negedge clk)  clr_resp_rdy = 0;

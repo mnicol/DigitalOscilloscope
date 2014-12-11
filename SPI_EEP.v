@@ -49,7 +49,7 @@ always @(*)
 			    nstate = WRITE;
 			  end			  
 			  default : begin
-			    //$display("ERROR: command to cal EEP has unknown opcode bits");
+			    $display("ERROR: command to cal EEP has unknown opcode bits: %b", cmd_rcvd[15:14]);
 				nstate = IDLE;
 			  end
 			endcase
@@ -103,7 +103,7 @@ always @(posedge clk, negedge rst_n)
     state <= nstate;
 	
 initial
-  $readmemh("CAL_EEP.hex",mem);
+  $readmemh("C:/Users/tdvoss/551/DigitalOscilloscope/CAL_EEP.hex",mem);
   
 endmodule
 			 

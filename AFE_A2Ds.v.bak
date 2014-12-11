@@ -81,8 +81,8 @@ module AFE_A2D(clk,rst_n,adc_clk,ch1_ss_n,ch2_ss_n,ch3_ss_n,trig_ss_n,MOSI,SCLK,
   //////////////////////////////////////////////////////////////////
   initial  begin
     $readmemh("C:/Users/tdvoss/551/DigitalOscilloscope/ch1_analog.hex",ch1_raw);
-	$readmemh("C:/Users/tdvoss/551/DigitalOscilloscope/ch2_analog.hex",ch2_raw);
-    $readmemh("C:/Users/tdvoss/551/DigitalOscilloscope/ch3_analog.hex",ch3_raw);
+	$readmemh("ch2_analog.hex",ch2_raw);
+    $readmemh("ch3_analog.hex",ch3_raw);
   end
 	
 	
