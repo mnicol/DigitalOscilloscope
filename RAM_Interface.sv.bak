@@ -14,7 +14,7 @@ input logic [2:0] og_addr;
 input logic data_valid;
 
 /////////////////////////////////////////
-// 		 Outputs 	                      //
+// 		 Outputs 	                       //
 ///////////////////////////////////////
 output logic en, ram_trmt, cmd_rdy;
 output logic [8:0] addr;
@@ -125,7 +125,7 @@ always_ff @(posedge clk) begin
 	if (store_gain)
 		gain <= og_data;
 	else
-		gain <= offset;
+		gain <= gain;
 end	
 
 always_comb begin

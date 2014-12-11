@@ -1,6 +1,6 @@
 `timescale 1ns/10ps
 module DSO_dig(clk,rst_n,adc_clk,ch1_data,ch2_data,ch3_data,trig1,trig2,MOSI,MISO,
-               SCLK,trig_ss_n,ch1_ss_n,ch2_ss_n,ch3_ss_n,EEP_ss_n,TX,RX);
+               SCLK,trig_ss_n,ch1_ss_n,ch2_ss_n,ch3_ss_n,EEP_ss_n,TX,RX,LED_n);
 				
   input clk,rst_n;								// clock and active low reset
   output adc_clk;								// 20MHz clocks to ADC
@@ -14,7 +14,7 @@ module DSO_dig(clk,rst_n,adc_clk,ch1_data,ch2_data,ch3_data,trig1,trig2,MOSI,MIS
   output wire EEP_ss_n;								// Calibration EEPROM slave select
   output TX;									// UART TX to HOST
   input RX;										// UART RX from HOST
-  //output LED_n;									// control to active low LED
+  output LED_n;									// control to active low LED
   
   ////////////////////////////////////////////////////
   // Define any wires needed for interconnect here //

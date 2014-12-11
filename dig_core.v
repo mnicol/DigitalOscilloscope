@@ -55,7 +55,7 @@ module dig_core(clk,rst_n,adc_clk,trig1,trig2,SPI_data,wrt_SPI,SPI_done,ss,EEP_d
   // Instantiate the blocks of your digital core next //
   /////////////////////////////////////////////////////
 Analog_Interface iAnaI(.clk(clk), .adc_clk(adc_clk), .rst_n(rst_n), .trig1(trig1), .trig2(trig2),
-			.decimator(decimator), .trig_cfg(trig_cfg), .trig_pos(trig_pos),
+			.decimator(decimator), .trig_cfg(trig_cfg), .trig_pos(trig_pos), .rclk(rclk),
 			.set_cap_done(set_cap_done), .en(en), .we(we), .addr(cap_addr), .trace_end(trace_end));
 
 RAM_Interface iRAMI(.clk(clk), .rst_n(rst_n), .trace_end(trace_end), .cap_en(cap_en),

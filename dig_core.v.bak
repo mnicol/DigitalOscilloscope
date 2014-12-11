@@ -36,9 +36,6 @@ module dig_core(clk,rst_n,adc_clk,trig1,trig2,SPI_data,wrt_SPI,SPI_done,ss,EEP_d
 	wire [1:0] dump_chan;
 	wire ram_trmt;
 	wire [7:0] ram_tx_data;
-	wire [7:0] resp_data;
-	wire send_resp;
-	wire resp_sent;
 	wire [7:0] EEP_cfg_data;
 	wire eep_done;
 	wire [2:0] og_addr;
