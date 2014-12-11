@@ -60,10 +60,11 @@ compile -map_effort medium
 set_clock_uncertainty 0.15 clk
 set_fix_hold clk
 
-########################
-# Flatten hierarchy    #
-########################
-ungroup -all -flatten
+##########################################
+# Flatten hierarchy                      #
+# Removed to prevent register removal    #
+##########################################
+#ungroup -all -flatten
 
 ##################################
 # Compile the design again       #
