@@ -7,7 +7,7 @@ reg [23:0] cmd_snd;						// command Host is sending to DUT
 reg send_cmd;
 reg clr_resp_rdy;
 
-reg [23:0] tx_data;
+reg [7:0] tx_data;
 reg trmt;
 
 
@@ -56,7 +56,8 @@ AFE_A2D iAFE(.clk(clk),.rst_n(rst_n),.adc_clk(adc_clk),.ch1_ss_n(ch1_ss_n),.ch2_
 ///////////////////////////////////////////
 //UART_comm_mstr iMSTR(.clk(clk), .rst_n(rst_n), .RX(TX), .TX(RX), .cmd(cmd_snd), .send_cmd(send_cmd),
 //                     .cmd_sent(cmd_sent), .resp_rdy(resp_rdy), .resp(resp_rcv), .clr_resp_rdy(clr_resp_rdy));
-UART_comm iUARTMSTR(.clk(clk), .rst_n(rst_n), .tx_data(tx_data), .trmt(trmt), .TX(RX), .tx_done(tx_done), .RX(TX), .clr_cmd_rdy(clr_resp_rdy), .rx_data(resp_rcv), .cmd_rdy(resp_rdy));
+UART_comm iUARTMSTR(.clk(clk), .rst_n(rst_n), .tx_data(tx_data), .trmt(trmt), .TX(RX), .tx_done(tx_done), .RX(TX),
+							.clr_cmd_rdy(clr_resp_rdy), .rx_data(resp_rcv), .cmd_rdy(resp_rdy));
 
 
 /////////////////////////////////////

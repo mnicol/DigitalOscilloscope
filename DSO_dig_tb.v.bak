@@ -7,8 +7,7 @@ reg [23:0] cmd_snd;						// command Host is sending to DUT
 reg send_cmd;
 reg clr_resp_rdy;
 
-reg [23:0] tx_data;
-//reg [7:0] resp_rcv;
+reg [7:0] tx_data;
 reg trmt;
 
 
