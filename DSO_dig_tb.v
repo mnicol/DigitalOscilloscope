@@ -17,7 +17,6 @@ wire TX,RX;
 wire [15:0] cmd_ch1,cmd_ch2,cmd_ch3;			// received commands to digital Pots that control channel gain
 wire [15:0] cmd_trig;							// received command to digital Pot that controls trigger level
 wire cmd_sent,resp_rdy;							// outputs from master UART
-wire [7:0] resp_rcv;
 wire [7:0] ch1_data,ch2_data,ch3_data;
 wire trig1,trig2;
 
@@ -57,7 +56,7 @@ AFE_A2D iAFE(.clk(clk),.rst_n(rst_n),.adc_clk(adc_clk),.ch1_ss_n(ch1_ss_n),.ch2_
 //UART_comm_mstr iMSTR(.clk(clk), .rst_n(rst_n), .RX(TX), .TX(RX), .cmd(cmd_snd), .send_cmd(send_cmd),
 //                     .cmd_sent(cmd_sent), .resp_rdy(resp_rdy), .resp(resp_rcv), .clr_resp_rdy(clr_resp_rdy));
 UART_comm iUARTMSTR(.clk(clk), .rst_n(rst_n), .tx_data(tx_data), .trmt(trmt), .TX(RX), .tx_done(tx_done), .RX(TX),
-							.clr_cmd_rdy(clr_resp_rdy), .rx_data(resp_rcv), .cmd_rdy(resp_rdy));
+							.clr_cmd_rdy(clr_resp_rdy), .cmd_rdy(resp_rdy));
 
 
 /////////////////////////////////////
@@ -126,9 +125,9 @@ initial begin
 	send_full_cmd({EEP_WRT,8'b00101010, 8'hBB});
 
 	//Check for valid result
-	if(resp_rcv != 8'hA5) begin
+	if(iUARTMSTR.rx_data != 8'hA5) begin
 			$strobe("--------------------------------------------------------------");
-			$strobe("--     EEPROM Write       -- Fail ---- Ack is %h not 0xA5 --", resp_rcv );
+			$strobe("--     EEPROM Write       -- Fail ---- Ack is %h not 0xA5 --", iUARTMSTR.rx_data );
 			$strobe("--------------------------------------------------------------\n");
 		end
 	else begin
@@ -145,9 +144,9 @@ initial begin
 	send_full_cmd({EEP_RD, 8'b00101010, 8'hFF});
 
 	//Check for valid result
-	if(resp_rcv != 8'hBB) begin
+	if(iUARTMSTR.rx_data != 8'hBB) begin
 			$strobe("--------------------------------------------------------------");
-			$strobe("--      EEPROM Read       -- Fail ---- Data: %h  ( 0xBB ) --", resp_rcv );
+			$strobe("--      EEPROM Read       -- Fail ---- Data: %h  ( 0xBB ) --", iUARTMSTR.rx_data );
 			$strobe("--------------------------------------------------------------\n");
 		end
 	else begin
@@ -163,9 +162,9 @@ initial begin
 	send_full_cmd({CFG_GAIN, 8'b000_111_00/*8'b000_ggg_cc*/, 8'hFF});
 
 	//Check for valid result
-	if(resp_rcv != 8'hA5)begin
+	if(iUARTMSTR.rx_data != 8'hA5)begin
 			$strobe("--------------------------------------------------------------");
-		 	$strobe("--   Config Gain Write    -- Fail ---- (Ack %h not 0xA5) --", resp_rcv );
+		 	$strobe("--   Config Gain Write    -- Fail ---- (Ack %h not 0xA5) --", iUARTMSTR.rx_data );
 			$strobe("--------------------------------------------------------------\n");
 		end
 	else begin
@@ -181,9 +180,9 @@ initial begin
 	send_full_cmd({TRIG_CFG, 8'b00_0_1_10_00/*8'b00_d_e_tt_cc*/, 8'hFF});
 
 	//Check for valid result
-	if(resp_rcv != 8'hA5) begin
+	if(iUARTMSTR.rx_data != 8'hA5) begin
 			$strobe("--------------------------------------------------------------");
-			$strobe("--  Trigger Config Write  -- Fail ---- (Ack is %h not 0xA5) --", resp_rcv );
+			$strobe("--  Trigger Config Write  -- Fail ---- (Ack is %h not 0xA5) --", iUARTMSTR.rx_data );
 			$strobe("--------------------------------------------------------------\n");
 		end
 	else begin
@@ -199,9 +198,9 @@ initial begin
 	send_full_cmd({TRIG_LVL, 8'hFF, 8'h80});
 
 	//Check for valid result
-	if(resp_rcv != 8'hA5) begin
+	if(iUARTMSTR.rx_data != 8'hA5) begin
 			$strobe("--------------------------------------------------------------");
-			$strobe("--   Trigger Level Write  -- Fail ---- (Ack %h not 0xA5) --", resp_rcv );
+			$strobe("--   Trigger Level Write  -- Fail ---- (Ack %h not 0xA5) --", iUARTMSTR.rx_data );
 			$strobe("--------------------------------------------------------------\n");
 		end
 	else begin
@@ -217,9 +216,9 @@ initial begin
 	send_full_cmd({TRIG_POS, 8'b0000_0000, 8'h80});
 
 	//Check for valid result
-	if(resp_rcv != 8'hA5) begin
+	if(iUARTMSTR.rx_data != 8'hA5) begin
 			$strobe("--------------------------------------------------------------");
-			$strobe("-- Trigger Position Write -- Fail ---- (Ack %h not 0xA5) --", resp_rcv );
+			$strobe("-- Trigger Position Write -- Fail ---- (Ack %h not 0xA5) --", iUARTMSTR.rx_data );
 			$strobe("--------------------------------------------------------------\n");
 		end
 	else if ( iDUT.iDC.iCC.trig_pos != 9'h80) begin
@@ -240,9 +239,9 @@ initial begin
 	send_full_cmd({SET_DEC, 8'hFF, 8'h02});
 
 	//Check for valid result
-	if(resp_rcv != 8'hA5) begin
+	if(iUARTMSTR.rx_data != 8'hA5) begin
 			$strobe("--------------------------------------------------------------");
-			$strobe("--      Set Decimator     -- Fail ---- (Ack %h not 0xA5) --", resp_rcv );
+			$strobe("--      Set Decimator     -- Fail ---- (Ack %h not 0xA5) --", iUARTMSTR.rx_data );
 			$strobe("--------------------------------------------------------------\n");
 		end
 	else if( iDUT.iDC.iCC.decimator != 8'h02 ) begin
@@ -264,9 +263,9 @@ initial begin
 	send_full_cmd({TRIG_RD, 8'hBA, 8'hE0});
 
 	//Check if the config data is correct
-	if(resp_rcv != 8'b00111000) begin
+	if(iUARTMSTR.rx_data != 8'b00111000) begin
 			$strobe("--------------------------------------------------------------");
-			$strobe("------------  Trig Read Fail: %h should be 0x38  -----------", resp_rcv);
+			$strobe("------------  Trig Read Fail: %h should be 0x38  -----------", iUARTMSTR.rx_data);
 			$strobe("--------------------------------------------------------------\n");
 		end
 	else begin
@@ -292,7 +291,7 @@ initial begin
 		if(!resp_rdy)
         	@(posedge resp_rdy)
 
-		$fdisplay(fd, "%h", resp_rcv);//store resp_rcv to file or check to see if it's the right value?
+		$fdisplay(fd, "%h", iUARTMSTR.rx_data);//store rx_data to file or check to see if it's the right value?
 
       	@(negedge clk)  clr_resp_rdy = 1;
       	@(negedge clk)  clr_resp_rdy = 0;
