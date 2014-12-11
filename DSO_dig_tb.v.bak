@@ -8,10 +8,9 @@ reg send_cmd;
 reg clr_resp_rdy;
 
 reg [23:0] tx_data;
-reg [7:0] rx_data;
+//reg [7:0] resp_rcv;
 reg trmt;
 
-reg tx_done, clr_rdy, rdy;
 
 wire adc_clk,MOSI,SCLK,trig_ss_n,ch1_ss_n,ch2_ss_n,ch3_ss_n,EEP_ss_n;
 wire TX,RX;
@@ -58,7 +57,8 @@ AFE_A2D iAFE(.clk(clk),.rst_n(rst_n),.adc_clk(adc_clk),.ch1_ss_n(ch1_ss_n),.ch2_
 ///////////////////////////////////////////
 //UART_comm_mstr iMSTR(.clk(clk), .rst_n(rst_n), .RX(TX), .TX(RX), .cmd(cmd_snd), .send_cmd(send_cmd),
 //                     .cmd_sent(cmd_sent), .resp_rdy(resp_rdy), .resp(resp_rcv), .clr_resp_rdy(clr_resp_rdy));
-UART_comm iUARTMSTR(.clk(clk), .rst_n(rst_n), .tx_data(tx_data), .trmt(trmt), .TX(RX), .tx_done(tx_done), .RX(TX), .clr_rdy(clr_rdy), .rx_data(rx_data), .rdy(rdy));
+UART_comm iUARTMSTR(.clk(clk), .rst_n(rst_n), .tx_data(tx_data), .trmt(trmt), .TX(RX), .tx_done(tx_done), .RX(TX), .clr_cmd_rdy(clr_resp_rdy), .rx_data(resp_rcv), .cmd_rdy(resp_rdy));
+
 
 /////////////////////////////////////
 // Instantiate Calibration EEPROM //
@@ -117,7 +117,7 @@ endtask
 initial begin
 	clk = 0;
 	rst_n = 0;			// assert reset
-	clr_rdy = 1'b0;
+	clr_resp_rdy = 1'b0;
 	trmt = 1'b0;
 
 ////////setup////////
@@ -126,9 +126,9 @@ initial begin
 	send_full_cmd({EEP_WRT,8'b00101010, 8'hBB});
 
 	//Check for valid result
-	if(rx_data != 8'hA5) begin
+	if(resp_rcv != 8'hA5) begin
 			$strobe("--------------------------------------------------------------");
-			$strobe("--     EEPROM Write       -- Fail ---- Ack is %h not 0xA5 --", rx_data );
+			$strobe("--     EEPROM Write       -- Fail ---- Ack is %h not 0xA5 --", resp_rcv );
 			$strobe("--------------------------------------------------------------\n");
 		end
 	else begin
@@ -136,8 +136,8 @@ initial begin
 			$strobe("--     EEPROM Write       -- Pass ----------------------------");
 			$strobe("--------------------------------------------------------------\n");
 		end
-	@(negedge clk)	clr_rdy = 1'b1;
-	@(negedge clk)	clr_rdy = 1'b0;
+	@(negedge clk)	clr_resp_rdy = 1'b1;
+	@(negedge clk)	clr_resp_rdy = 1'b0;
 
 
 
@@ -145,9 +145,9 @@ initial begin
 	send_full_cmd({EEP_RD, 8'b00101010, 8'hFF});
 
 	//Check for valid result
-	if(rx_data != 8'hBB) begin
+	if(resp_rcv != 8'hBB) begin
 			$strobe("--------------------------------------------------------------");
-			$strobe("--      EEPROM Read       -- Fail ---- Data: %h  ( 0xBB ) --", rx_data );
+			$strobe("--      EEPROM Read       -- Fail ---- Data: %h  ( 0xBB ) --", resp_rcv );
 			$strobe("--------------------------------------------------------------\n");
 		end
 	else begin
@@ -155,17 +155,17 @@ initial begin
 			$strobe("--      EEPROM Read       -- Pass ----------------------------");
 			$strobe("--------------------------------------------------------------\n");
 		end
-	@(negedge clk)	clr_rdy = 1'b1;
-	@(negedge clk)	clr_rdy = 1'b0;
+	@(negedge clk)	clr_resp_rdy = 1'b1;
+	@(negedge clk)	clr_resp_rdy = 1'b0;
 
 
 //// CFG_GAIN ////
 	send_full_cmd({CFG_GAIN, 8'b000_111_00/*8'b000_ggg_cc*/, 8'hFF});
 
 	//Check for valid result
-	if(rx_data != 8'hA5)begin
+	if(resp_rcv != 8'hA5)begin
 			$strobe("--------------------------------------------------------------");
-		 	$strobe("--   Config Gain Write    -- Fail ---- (Ack %h not 0xA5) --", rx_data );
+		 	$strobe("--   Config Gain Write    -- Fail ---- (Ack %h not 0xA5) --", resp_rcv );
 			$strobe("--------------------------------------------------------------\n");
 		end
 	else begin
@@ -173,17 +173,17 @@ initial begin
 			$strobe("--   Config Gain Write    -- Pass ----------------------------");
 			$strobe("--------------------------------------------------------------\n");
 		end
-	@(negedge clk)	clr_rdy = 1'b1;
-	@(negedge clk)	clr_rdy = 1'b0;
+	@(negedge clk)	clr_resp_rdy = 1'b1;
+	@(negedge clk)	clr_resp_rdy = 1'b0;
 
 
 //// TRIG_CFG ////
 	send_full_cmd({TRIG_CFG, 8'b00_0_1_10_00/*8'b00_d_e_tt_cc*/, 8'hFF});
 
 	//Check for valid result
-	if(rx_data != 8'hA5) begin
+	if(resp_rcv != 8'hA5) begin
 			$strobe("--------------------------------------------------------------");
-			$strobe("--  Trigger Config Write  -- Fail ---- (Ack is %h not 0xA5) --", rx_data );
+			$strobe("--  Trigger Config Write  -- Fail ---- (Ack is %h not 0xA5) --", resp_rcv );
 			$strobe("--------------------------------------------------------------\n");
 		end
 	else begin
@@ -191,17 +191,17 @@ initial begin
 			$strobe("--  Trigger Config Write  -- Pass ----------------------------");
 			$strobe("--------------------------------------------------------------\n");
 		end
-	@(negedge clk)	clr_rdy = 1'b1;
-	@(negedge clk)	clr_rdy = 1'b0;
+	@(negedge clk)	clr_resp_rdy = 1'b1;
+	@(negedge clk)	clr_resp_rdy = 1'b0;
 
 
 //// TRIG_LVL ////
 	send_full_cmd({TRIG_LVL, 8'hFF, 8'h80});
 
 	//Check for valid result
-	if(rx_data != 8'hA5) begin
+	if(resp_rcv != 8'hA5) begin
 			$strobe("--------------------------------------------------------------");
-			$strobe("--   Trigger Level Write  -- Fail ---- (Ack %h not 0xA5) --", rx_data );
+			$strobe("--   Trigger Level Write  -- Fail ---- (Ack %h not 0xA5) --", resp_rcv );
 			$strobe("--------------------------------------------------------------\n");
 		end
 	else begin
@@ -209,17 +209,17 @@ initial begin
 			$strobe("--   Trigger Level Write  -- Pass ----------------------------");
 			$strobe("--------------------------------------------------------------\n");
 		end
-	@(negedge clk)	clr_rdy = 1'b1;
-	@(negedge clk)	clr_rdy = 1'b0;
+	@(negedge clk)	clr_resp_rdy = 1'b1;
+	@(negedge clk)	clr_resp_rdy = 1'b0;
 
 
 //// TRIG_POS ////
 	send_full_cmd({TRIG_POS, 8'b0000_0000, 8'h80});
 
 	//Check for valid result
-	if(rx_data != 8'hA5) begin
+	if(resp_rcv != 8'hA5) begin
 			$strobe("--------------------------------------------------------------");
-			$strobe("-- Trigger Position Write -- Fail ---- (Ack %h not 0xA5) --", rx_data );
+			$strobe("-- Trigger Position Write -- Fail ---- (Ack %h not 0xA5) --", resp_rcv );
 			$strobe("--------------------------------------------------------------\n");
 		end
 	else if ( iDUT.iDC.iCC.trig_pos != 9'h80) begin
@@ -232,17 +232,17 @@ initial begin
 			$strobe("-- Trigger Position Write -- Pass ----------------------------");
 			$strobe("--------------------------------------------------------------\n");
 		end
-	@(negedge clk)	clr_rdy = 1'b1;
-	@(negedge clk)	clr_rdy = 1'b0;
+	@(negedge clk)	clr_resp_rdy = 1'b1;
+	@(negedge clk)	clr_resp_rdy = 1'b0;
 
 
 //// SET_DEC ////
 	send_full_cmd({SET_DEC, 8'hFF, 8'h02});
 
 	//Check for valid result
-	if(rx_data != 8'hA5) begin
+	if(resp_rcv != 8'hA5) begin
 			$strobe("--------------------------------------------------------------");
-			$strobe("--      Set Decimator     -- Fail ---- (Ack %h not 0xA5) --", rx_data );
+			$strobe("--      Set Decimator     -- Fail ---- (Ack %h not 0xA5) --", resp_rcv );
 			$strobe("--------------------------------------------------------------\n");
 		end
 	else if( iDUT.iDC.iCC.decimator != 8'h02 ) begin
@@ -255,8 +255,8 @@ initial begin
 			$strobe("--      Set Decimator     -- Pass ----------------------------");
 			$strobe("--------------------------------------------------------------\n");
 		end
-	@(negedge clk)	clr_rdy = 1'b1;
-	@(negedge clk)	clr_rdy = 1'b0;
+	@(negedge clk)	clr_resp_rdy = 1'b1;
+	@(negedge clk)	clr_resp_rdy = 1'b0;
 
 	repeat(100) @(negedge clk); //wait for everything to be done and spacer
 
@@ -264,9 +264,9 @@ initial begin
 	send_full_cmd({TRIG_RD, 8'hBA, 8'hE0});
 
 	//Check if the config data is correct
-	if(rx_data != 8'b00111000) begin
+	if(resp_rcv != 8'b00111000) begin
 			$strobe("--------------------------------------------------------------");
-			$strobe("------------  Trig Read Fail: %h should be 0x38  -----------", rx_data);
+			$strobe("------------  Trig Read Fail: %h should be 0x38  -----------", resp_rcv);
 			$strobe("--------------------------------------------------------------\n");
 		end
 	else begin
@@ -274,8 +274,8 @@ initial begin
 			$strobe("--       Trig Read        -- Pass ----------------------------");
 			$strobe("--------------------------------------------------------------\n");
 		end
-	@(negedge clk)	clr_rdy = 1'b1;
-	@(negedge clk)	clr_rdy = 1'b0;
+	@(negedge clk)	clr_resp_rdy = 1'b1;
+	@(negedge clk)	clr_resp_rdy = 1'b0;
 
 	repeat(50) @(negedge clk); //Wait for some clk cycles
 
@@ -292,7 +292,7 @@ initial begin
 		if(!resp_rdy)
         	@(posedge resp_rdy)
 
-		$fdisplay(fd, "%h", rx_data);//store rx_data to file or check to see if it's the right value?
+		$fdisplay(fd, "%h", resp_rcv);//store resp_rcv to file or check to see if it's the right value?
 
       	@(negedge clk)  clr_resp_rdy = 1;
       	@(negedge clk)  clr_resp_rdy = 0;
