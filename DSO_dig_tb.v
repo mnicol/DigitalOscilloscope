@@ -8,7 +8,10 @@ reg send_cmd;
 reg clr_resp_rdy;
 
 reg [23:0] tx_data;
+reg [7:0] rx_data;
 reg trmt;
+
+reg tx_done, clr_rdy, rdy;
 
 wire adc_clk,MOSI,SCLK,trig_ss_n,ch1_ss_n,ch2_ss_n,ch3_ss_n,EEP_ss_n;
 wire TX,RX;
@@ -19,6 +22,8 @@ wire cmd_sent,resp_rdy;							// outputs from master UART
 wire [7:0] resp_rcv;
 wire [7:0] ch1_data,ch2_data,ch3_data;
 wire trig1,trig2;
+
+integer fd;
 
 ///////////////////////////
 // Define command bytes //
@@ -108,65 +113,201 @@ end
 endtask
 
 
-integer fd = $fopen("UART_OUTPUT.txt");
 
 initial begin
-  clk = 0;
-  rst_n = 0;			// assert reset
-  ///////////////////////////////
-  // Your testing goes here!! //
-  /////////////////////////////
+	clk = 0;
+	rst_n = 0;			// assert reset
+	clr_rdy = 1'b0;
+	trmt = 1'b0;
 
 ////////setup////////
-	//EEP_WRT    	// Write calibration EEP, 2nd byte is address, 3rd byte is data
-	send_full_cmd({EEP_WRT,8'b00101010, 8'hFF});
 
-	//CFG_GAIN    // Gain setting in bits [4:2], and channel in [1:0] of 2nd byte
+//// EEP_WRT ////
+	send_full_cmd({EEP_WRT,8'b00101010, 8'hBB});
+
+	//Check for valid result
+	if(rx_data != 8'hA5) begin
+			$strobe("--------------------------------------------------------------");
+			$strobe("--     EEPROM Write       -- Fail ---- Ack is %h not 0xA5 --", rx_data );
+			$strobe("--------------------------------------------------------------\n");
+		end
+	else begin
+			$strobe("--------------------------------------------------------------");
+			$strobe("--     EEPROM Write       -- Pass ----------------------------");
+			$strobe("--------------------------------------------------------------\n");
+		end
+	@(negedge clk)	clr_rdy = 1'b1;
+	@(negedge clk)	clr_rdy = 1'b0;
+
+
+
+//// EEP_RD ////
+	send_full_cmd({EEP_RD, 8'b00101010, 8'hFF});
+
+	//Check for valid result
+	if(rx_data != 8'hBB) begin
+			$strobe("--------------------------------------------------------------");
+			$strobe("--      EEPROM Read       -- Fail ---- Data: %h  ( 0xBB ) --", rx_data );
+			$strobe("--------------------------------------------------------------\n");
+		end
+	else begin
+			$strobe("--------------------------------------------------------------");
+			$strobe("--      EEPROM Read       -- Pass ----------------------------");
+			$strobe("--------------------------------------------------------------\n");
+		end
+	@(negedge clk)	clr_rdy = 1'b1;
+	@(negedge clk)	clr_rdy = 1'b0;
+
+
+//// CFG_GAIN ////
 	send_full_cmd({CFG_GAIN, 8'b000_111_00/*8'b000_ggg_cc*/, 8'hFF});
 
-	//TRIG_CFG    // Write trig config.  2nd byte 00dettcc.  d=done, e=edge,
-	send_full_cmd({TRIG_CFG, 8'b00_1_1_00_00/*8'b00_d_e_tt_cc*/, 8'hFF});
+	//Check for valid result
+	if(rx_data != 8'hA5)begin
+			$strobe("--------------------------------------------------------------");
+		 	$strobe("--   Config Gain Write    -- Fail ---- (Ack %h not 0xA5) --", rx_data );
+			$strobe("--------------------------------------------------------------\n");
+		end
+	else begin
+			$strobe("--------------------------------------------------------------");
+			$strobe("--   Config Gain Write    -- Pass ----------------------------");
+			$strobe("--------------------------------------------------------------\n");
+		end
+	@(negedge clk)	clr_rdy = 1'b1;
+	@(negedge clk)	clr_rdy = 1'b0;
 
-	//TRIG_LVL    // Set trigger level, lower byte specifies value (46,201) is valid
-	send_full_cmd({TRIG_LVL, 8'hFF, 8'hAA/*8'hLL*/});
 
-	//TRIG_POS    // Set the trigger position. This is a 13-bit number, samples after capture
-	send_full_cmd({TRIG_POS, 8'b0000_0001/*8'b0000_000U*/, 8'hAA/*8'hLL*/});
+//// TRIG_CFG ////
+	send_full_cmd({TRIG_CFG, 8'b00_0_1_10_00/*8'b00_d_e_tt_cc*/, 8'hFF});
 
-	//SET_DEC    	// Set decimator, lower nibble of 3rd byte. 2^this value is decimator (set to 2)
+	//Check for valid result
+	if(rx_data != 8'hA5) begin
+			$strobe("--------------------------------------------------------------");
+			$strobe("--  Trigger Config Write  -- Fail ---- (Ack is %h not 0xA5) --", rx_data );
+			$strobe("--------------------------------------------------------------\n");
+		end
+	else begin
+			$strobe("--------------------------------------------------------------");
+			$strobe("--  Trigger Config Write  -- Pass ----------------------------");
+			$strobe("--------------------------------------------------------------\n");
+		end
+	@(negedge clk)	clr_rdy = 1'b1;
+	@(negedge clk)	clr_rdy = 1'b0;
+
+
+//// TRIG_LVL ////
+	send_full_cmd({TRIG_LVL, 8'hFF, 8'h80});
+
+	//Check for valid result
+	if(rx_data != 8'hA5) begin
+			$strobe("--------------------------------------------------------------");
+			$strobe("--   Trigger Level Write  -- Fail ---- (Ack %h not 0xA5) --", rx_data );
+			$strobe("--------------------------------------------------------------\n");
+		end
+	else begin
+			$strobe("--------------------------------------------------------------");
+			$strobe("--   Trigger Level Write  -- Pass ----------------------------");
+			$strobe("--------------------------------------------------------------\n");
+		end
+	@(negedge clk)	clr_rdy = 1'b1;
+	@(negedge clk)	clr_rdy = 1'b0;
+
+
+//// TRIG_POS ////
+	send_full_cmd({TRIG_POS, 8'b0000_0000, 8'h80});
+
+	//Check for valid result
+	if(rx_data != 8'hA5) begin
+			$strobe("--------------------------------------------------------------");
+			$strobe("-- Trigger Position Write -- Fail ---- (Ack %h not 0xA5) --", rx_data );
+			$strobe("--------------------------------------------------------------\n");
+		end
+	else if ( iDUT.iDC.iCC.trig_pos != 9'h80) begin
+			$strobe("--------------------------------------------------------------");
+			$strobe("------   Trig Pos Internal Wrong: %h should be 0x80   ------", iDUT.iDC.iCC.trig_pos );
+			$strobe("--------------------------------------------------------------\n");
+		end
+	else begin
+			$strobe("--------------------------------------------------------------");
+			$strobe("-- Trigger Position Write -- Pass ----------------------------");
+			$strobe("--------------------------------------------------------------\n");
+		end
+	@(negedge clk)	clr_rdy = 1'b1;
+	@(negedge clk)	clr_rdy = 1'b0;
+
+
+//// SET_DEC ////
 	send_full_cmd({SET_DEC, 8'hFF, 8'h02});
 
+	//Check for valid result
+	if(rx_data != 8'hA5) begin
+			$strobe("--------------------------------------------------------------");
+			$strobe("--      Set Decimator     -- Fail ---- (Ack %h not 0xA5) --", rx_data );
+			$strobe("--------------------------------------------------------------\n");
+		end
+	else if( iDUT.iDC.iCC.decimator != 8'h02 ) begin
+			$strobe("--------------------------------------------------------------");
+			$strobe("------  Decimator Internal Wrong: %h should be 0x02  ------", iDUT.iDC.iCC.decimator);
+			$strobe("--------------------------------------------------------------");
+		end
+	else begin
+			$strobe("--------------------------------------------------------------");
+			$strobe("--      Set Decimator     -- Pass ----------------------------");
+			$strobe("--------------------------------------------------------------\n");
+		end
+	@(negedge clk)	clr_rdy = 1'b1;
+	@(negedge clk)	clr_rdy = 1'b0;
 
-////////send dump////////
-	//DUMP_CH    	// Channel to dump specified in low 2-bits of second byte
-	send_full_cmd({DUMP_CH, 8'b0000_0011/*8'b0000_00cc*/, 8'hFF});
+	repeat(100) @(negedge clk); //wait for everything to be done and spacer
 
-
-////////Wait for dump to finish////////
-	//TRIG_RD    	// Read trig config register
+//// TRIG_RD ////
 	send_full_cmd({TRIG_RD, 8'hBA, 8'hE0});
 
-end
+	//Check if the config data is correct
+	if(rx_data != 8'b00111000) begin
+			$strobe("--------------------------------------------------------------");
+			$strobe("------------  Trig Read Fail: %h should be 0x38  -----------", rx_data);
+			$strobe("--------------------------------------------------------------\n");
+		end
+	else begin
+			$strobe("--------------------------------------------------------------");
+			$strobe("--       Trig Read        -- Pass ----------------------------");
+			$strobe("--------------------------------------------------------------\n");
+		end
+	@(negedge clk)	clr_rdy = 1'b1;
+	@(negedge clk)	clr_rdy = 1'b0;
 
-//Store the data returned via the uart to a file for testing
-always @(posedge rdy)	begin
+	repeat(50) @(negedge clk); //Wait for some clk cycles
 
-	$fdisplay(fd,"%h", rx_data);//store rx_data to file or check to see if it's the right value?
+////////send dump////////
 
-	@(posedge clk)
-		clr_rdy = 1'b1;
+	fd = $fopen("DUMP.txt");
 
-	@(negedge clk)
-		clr_rdy = 1'b0;
+
+	//DUMP_CH    	// Channel to dump specified in low 2-bits of second byte
+	send_full_cmd({DUMP_CH, 8'b0000_0000/*8'b0000_00cc*/, 8'hFF});
+
+	repeat (510) 
+	begin
+		if(!resp_rdy)
+        	@(posedge resp_rdy)
+
+		$fdisplay(fd, "%h", rx_data);//store rx_data to file or check to see if it's the right value?
+
+      	@(negedge clk)  clr_resp_rdy = 1;
+      	@(negedge clk)  clr_resp_rdy = 0;
+  	end
+
+	repeat (30) @(negedge clk); //make sure dump isdone 
+
+	$fclose(fd);
+
+	$stop();
+
 end
 
 
 always
   #1 clk = ~clk;
 
-final
-	$fclose(fd);
-
 endmodule
-			 
-			 
