@@ -51,10 +51,10 @@ end
 // 		 Set cmd 	                      //
 ///////////////////////////////////////
 always_ff @(posedge clk) begin
-	if (cmd_cnt == 1)
-		cmd <= {8'h09, 2'b00, og_addr, dump_chan, 9'h000};
-	else
+	if (|cmd_cnt)
 		cmd <= {8'h09, 2'b00, og_addr, dump_chan, 9'h100};
+	else
+		cmd <= {8'h09, 2'b00, og_addr, dump_chan, 9'h000};
 end
 
 /////////////////////////////////////////

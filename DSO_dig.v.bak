@@ -19,29 +19,22 @@ module DSO_dig(clk,rst_n,adc_clk,ch1_data,ch2_data,ch3_data,trig1,trig2,MOSI,MIS
   ////////////////////////////////////////////////////
   // Define any wires needed for interconnect here //
   //////////////////////////////////////////////////
-  wire wrt_spi;
-  wire [15:0] spi_cmd;
   wire spi_SS_n;
-  wire spi_done;
-  wire spi_data;
 
 	wire [8:0] addr;
 	wire en;
 	wire we;
 	
 	wire clr_cmd_rdy;
-	wire trmt;
-	wire [7:0] tx_data;
 	wire cmd_rdy;
 	wire [23:0] cmd;
-	wire tx_done;
 
 	wire [15:0] SPI_data;
 	wire wrt_SPI;
 	wire SPI_done;
 	wire [2:0]ss;
 	wire [7:0] EEP_data;
-	wire [8:0] resp_data;
+	wire [7:0] resp_data;
 	wire send_resp;
 	wire resp_sent;
 	wire [7:0] ch1_rdata, ch2_rdata, ch3_rdata;
@@ -51,8 +44,8 @@ module DSO_dig(clk,rst_n,adc_clk,ch1_data,ch2_data,ch3_data,trig1,trig2,MOSI,MIS
   /////////////////////////////
   // Instantiate SPI master //
   ///////////////////////////
-  SPI_mstr SpiMstr( .clk(clk), .rst_n(rst_n), .wrt(wrt_spi), .cmd(spi_cmd), .MISO(MISO), 
-					.SCLK(SCLK), .MOSI(MOSI), .SS_n(spi_SS_n), .done(spi_done), .data(spi_data));
+  SPI_mstr SpiMstr( .clk(clk), .rst_n(rst_n), .wrt(wrt_SPI), .cmd(SPI_data), .MISO(MISO), 
+					.SCLK(SCLK), .MOSI(MOSI), .SS_n(spi_SS_n), .done(SPI_done), .data(EEP_data));
 
   ///////////////////////////////////////////////////////////////
   // You have a SPI master peripheral with a single SS output //
@@ -70,7 +63,7 @@ module DSO_dig(clk,rst_n,adc_clk,ch1_data,ch2_data,ch3_data,trig1,trig2,MOSI,MIS
   // Instantiate UART_comm module //
   /////////////////////////////////
 	UART_comm iUART_c(.clk(clk), .rst_n(rst_n), .clr_cmd_rdy(clr_cmd_rdy), .trmt(send_resp),
-					.tx_data(tx_data), .RX(RX), .cmd_rdy(cmd_rdy), .cmd(cmd), .tx_done(tx_done), .TX(TX));
+					.tx_data(resp_data), .RX(RX), .cmd_rdy(cmd_rdy), .cmd(cmd), .tx_done(resp_sent), .TX(TX));
 
   ///////////////////////////
   // Instantiate dig_core //

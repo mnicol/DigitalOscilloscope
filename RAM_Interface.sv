@@ -125,7 +125,7 @@ always_ff @(posedge clk) begin
 	if (store_gain)
 		gain <= og_data;
 	else
-		gain <= offset;
+		gain <= gain;
 end	
 
 always_comb begin

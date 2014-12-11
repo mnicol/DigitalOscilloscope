@@ -52,7 +52,7 @@ assign rclk = ~adc_clk;
 /////////////////////////////////////////
 // 		 States 	                      //
 ///////////////////////////////////////
-typedef enum logic [2:0] {IDLE, SAMPLE1, SAMPLE2, DONE} state_t;
+typedef enum logic [1:0] {IDLE, SAMPLE1, SAMPLE2, DONE} state_t;
 state_t state, nxt_state;
 
 always_ff @(posedge clk, negedge rst_n) begin
