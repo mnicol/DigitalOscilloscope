@@ -118,11 +118,7 @@ always_comb begin
 	//////////////////////////////////////////////////////////////
 	// Set done bit and move to IDLE
 	//////////////////////////////////////////////////////////////
-	WAIT: if (cnt_clk[3:0]) begin
-			MOSI = shiftReg[15];
-			nxt_state = WAIT;
-		end
-		else begin 
+	WAIT: begin 
 			done = 1;
 			nxt_state = IDLE;
 		end

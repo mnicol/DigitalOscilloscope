@@ -1,6 +1,6 @@
 module RAM_Interface(clk, rst_n, trace_end, cap_en, cap_addr, dump_en, dump_chan, we, 
 										ch1_rdata, ch2_rdata, ch3_rdata, og_data, data_valid, addr, en,
-										ram_trmt, tx_done, ram_tx_data, cmd_rdy, cmd, og_addr);//, clr_cmd_rdy);
+										ram_trmt, tx_done, ram_tx_data, cmd_rdy, cmd, og_addr, set_done);//, clr_cmd_rdy);
 
 /////////////////////////////////////////
 // 		 Inputs 	                      //
@@ -21,19 +21,20 @@ output logic en, ram_trmt, cmd_rdy;
 output logic [8:0] addr;
 output logic [7:0] ram_tx_data;
 output logic [23:0] cmd;
+output logic set_done;
 
 /////////////////////////////////////////
 // 		 Logic   	                      //
 ///////////////////////////////////////
 logic strt_dump, incr_addr;
-logic [8:0] dump_addr;
+//logic [8:0] dump_addr;
 logic [7:0] gain;
 logic [7:0] offset;
 logic [7:0] rdata;
 logic [1:0] cmd_cnt;
 logic store_offset;
 logic store_gain;
-logic done;
+//logic done;
 logic set_cmd_rdy;
 logic ram_trmt_ff1, ram_trmt_ff2;
 //logic clr_cmd_rdy;
@@ -74,12 +75,13 @@ end
 /////////////////////////////////////////
 // 		 Set cmd 	                      //
 ///////////////////////////////////////
-always_ff @(posedge clk) begin
-	if (|cmd_cnt)
-		cmd <= {8'h09, 2'b00, og_addr, dump_chan, 9'h100};
-	else
-		cmd <= {8'h09, 2'b00, og_addr, dump_chan, 9'h000};
-end
+//always_ff @(posedge clk) begin
+//	if (|cmd_cnt)
+//		cmd <= {8'h09, 2'b00, og_addr, dump_chan, 9'h100};
+//	else
+//		cmd <= {8'h09, 2'b00, og_addr, dump_chan, 9'h000};
+//end
+assign cmd = {8'h09, 2'b00, og_addr, dump_chan, 9'h000};
 
 /////////////////////////////////////////
 // 		 Increment cmd_cnt              //
@@ -141,7 +143,7 @@ end
 //	else
 //		offset <= offset;
 //end	
-assign offest = og_data[15:8];
+assign offset = og_data[15:8];
 
 /////////////////////////////////////////
 // 		 set gain                       //
@@ -158,15 +160,16 @@ always_comb begin
 	strt_dump = 1'b0;
 	incr_addr = 1'b0;
 	ram_trmt_ff1 = 1'b0;
-	set_cmd_rdy = 1'b0;
+	//set_cmd_rdy = 1'b0;
 	//clr_cmd_rdy = 1'b0;
 	store_offset = 1'b0;
 	store_gain = 1'b0;
 	cmd_rdy = 0;
+	set_done = 0;
 	nxt_state = IDLE;
 
 	case (state)
-		IDLE: if (!we & en) begin
+		IDLE: if (!we & dump_en) begin
 				nxt_state = GET_OG;
 				//set_cmd_rdy = 1'b1;
 				cmd_rdy = 1;
@@ -174,6 +177,7 @@ always_comb begin
 			else nxt_state = IDLE;
 
 		READ: if (done) begin
+				set_done = 1;
 				nxt_state = IDLE;
 			end
 			else begin

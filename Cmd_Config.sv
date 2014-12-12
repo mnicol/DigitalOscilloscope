@@ -1,6 +1,6 @@
 module Cmd_Config(clk, rst_n, SPI_data, wrt_SPI, ss, SPI_done, EEP_data,
 			 cmd, cmd_rdy, clr_cmd_rdy, resp_data, send_resp, resp_sent, set_cap_done,
-			decimator, dump_chan, dump_en, trig_cfg, trig_pos, EEP_cfg_data, eep_done, gain_addr);
+			decimator, dump_chan, dump_en, trig_cfg, trig_pos, EEP_cfg_data, eep_done, gain_addr, dump_done);
 
 
 
@@ -11,6 +11,7 @@ input logic clk, rst_n, SPI_done, cmd_rdy, resp_sent, set_cap_done;
 
 input logic [7:0] EEP_data;
 input logic [23:0] cmd;
+input logic dump_done;
 
 
 /////////////////////////////////////////
@@ -39,7 +40,7 @@ output logic [15:0] SPI_data;
 //logic [5:0] trig_cfg_set;
 
 logic eep_set_upper, eep_set_lower, tx_set, dec_set, dump_chan_set, dec_set_en, trig_pos_set, 
-							trig_set, gain_addr_set, bad_cmd, send_ack;
+							trig_set, gain_addr_set, bad_cmd, send_ack, set_dump_en;
 logic send_resp_ff1, send_resp_ff2;
 logic wrt_SPI_ff1, wrt_SPI_ff2, wrt_SPI_ff3, wrt_SPI_ff4;
 //logic [2:0] pause;
@@ -75,6 +76,15 @@ always_ff @(posedge clk) begin
 	wrt_SPI_ff3 <= wrt_SPI_ff2;
 	wrt_SPI_ff4 <= wrt_SPI_ff3;
 	wrt_SPI <= wrt_SPI_ff4;
+end
+
+always_ff @(posedge clk) begin
+	if (dump_done)
+		dump_en <= 0;
+	else if (set_dump_en)
+		dump_en <= 1;
+	else
+		dump_en <= dump_en;
 end
 
 always_ff @(posedge clk)
@@ -153,7 +163,7 @@ always_comb begin
 	wrt_SPI_ff1 = 0;
 	//SPI_data = 16'hxxxx;
 	SPI_data = SPI_data;
-	dump_en = 1'b0;
+	set_dump_en = 1'b0;
  	send_resp_ff1 = 1'b0;
 	//resp_data = 8'hA5;
 	eep_set_upper = 0;
@@ -200,7 +210,7 @@ always_comb begin
 							if( cmd[9:8] != 2'b11 ) begin
 								//dump_chan_set = cmd[9:8];
 								dump_chan_set = 1;
-								dump_en = 1'b1;
+								set_dump_en = 1'b1;
 							end
 							//resp_data = 8'hA5; //default should send error ack
 							send_resp_ff1 = 1;
@@ -400,7 +410,7 @@ always_comb begin
 				end
 				else begin
 					ss = 3'b100;	// Select EEPROM
-					SPI_data = {2'b00, cmd[13:7], 9'h1xx};
+					SPI_data = {SPI_data[15:9], 1'h1, SPI_data[7:0]};
 					wrt_SPI_ff1 = 1;
 					nxt_state = RX_SPI2;
 				end
@@ -411,7 +421,7 @@ always_comb begin
 				end 
 				else begin
 					ss = 3'b100;	// Select EEPROM
-					SPI_data = {2'b00, cmd[13:8], 8'hxx};
+					//SPI_data = {2'b00, cmd[13:8], 8'hxx};
 					wrt_SPI_ff1 = 1;
 					eep_set_upper = 1;
 					send_resp_ff1 = 1;
