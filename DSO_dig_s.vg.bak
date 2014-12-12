@@ -1,0 +1,74 @@
+
+module DSO_dig ( clk, rst_n, adc_clk, ch1_data, ch2_data, ch3_data, trig1, 
+        trig2, MOSI, MISO, SCLK, trig_ss_n, ch1_ss_n, ch2_ss_n, ch3_ss_n, 
+        EEP_ss_n, TX, RX, LED_n );
+  input [7:0] ch1_data;
+  input [7:0] ch2_data;
+  input [7:0] ch3_data;
+  input clk, rst_n, trig1, trig2, MISO, RX;
+  output adc_clk, MOSI, SCLK, trig_ss_n, ch1_ss_n, ch2_ss_n, ch3_ss_n,
+         EEP_ss_n, TX, LED_n;
+  wire   n38, wrt_SPI, spi_SS_n, SPI_done, spi_SS_n_ff, clr_cmd_rdy, send_resp,
+         cmd_rdy, resp_sent, rclk, en, we, n23, n24, n25, n26, n27, n28, n30,
+         n31, n33, n34, n35, n36, n37;
+  wire   [15:0] SPI_data;
+  wire   [15:0] EEP_resp;
+  wire   [2:0] ss_ff;
+  wire   [2:0] ss;
+  wire   [7:0] resp_data;
+  wire   [23:0] cmd;
+  wire   [8:0] addr;
+  wire   [7:0] ch1_rdata;
+  wire   [7:0] ch2_rdata;
+  wire   [7:0] ch3_rdata;
+  wire   SYNOPSYS_UNCONNECTED__0, SYNOPSYS_UNCONNECTED__1, 
+        SYNOPSYS_UNCONNECTED__2, SYNOPSYS_UNCONNECTED__3, 
+        SYNOPSYS_UNCONNECTED__4, SYNOPSYS_UNCONNECTED__5, 
+        SYNOPSYS_UNCONNECTED__6, SYNOPSYS_UNCONNECTED__7;
+
+  SPI_mstr SpiMstr ( .clk(clk), .rst_n(rst_n), .wrt(wrt_SPI), .cmd(SPI_data), 
+        .MISO(MISO), .SCLK(SCLK), .MOSI(MOSI), .SS_n(spi_SS_n), .done(SPI_done), .data({SYNOPSYS_UNCONNECTED__0, SYNOPSYS_UNCONNECTED__1, 
+        SYNOPSYS_UNCONNECTED__2, SYNOPSYS_UNCONNECTED__3, 
+        SYNOPSYS_UNCONNECTED__4, SYNOPSYS_UNCONNECTED__5, 
+        SYNOPSYS_UNCONNECTED__6, SYNOPSYS_UNCONNECTED__7, EEP_resp[7:0]}) );
+  UART_comm iUART_c ( .clk(clk), .rst_n(rst_n), .clr_cmd_rdy(clr_cmd_rdy), 
+        .trmt(send_resp), .tx_data(resp_data), .RX(RX), .cmd_rdy(cmd_rdy), 
+        .cmd(cmd), .tx_done(resp_sent), .TX(TX) );
+  dig_core iDC ( .clk(clk), .rst_n(rst_n), .adc_clk(adc_clk), .trig1(trig1), 
+        .trig2(trig2), .SPI_data(SPI_data), .wrt_SPI(wrt_SPI), .SPI_done(
+        SPI_done), .ss(ss), .EEP_data(EEP_resp[7:0]), .rclk(rclk), .en(en), 
+        .we(we), .addr(addr), .ch1_rdata(ch1_rdata), .ch2_rdata(ch2_rdata), 
+        .ch3_rdata(ch3_rdata), .cmd(cmd), .cmd_rdy(cmd_rdy), .clr_cmd_rdy(
+        clr_cmd_rdy), .resp_data(resp_data), .send_resp(send_resp), 
+        .resp_sent(resp_sent) );
+  RAM512 iRAM1 ( .rclk(rclk), .en(en), .we(we), .addr(addr), .wdata(ch1_data), 
+        .rdata(ch1_rdata) );
+  RAM512 iRAM2 ( .rclk(rclk), .en(en), .we(we), .addr(addr), .wdata(ch2_data), 
+        .rdata(ch2_rdata) );
+  RAM512 iRAM3 ( .rclk(rclk), .en(en), .we(we), .addr(addr), .wdata(ch3_data), 
+        .rdata(ch3_rdata) );
+  DFQD1BWP spi_SS_n_ff_reg ( .D(spi_SS_n), .CP(clk), .Q(spi_SS_n_ff) );
+  EDFD1BWP \ss_ff_reg[2]  ( .D(ss[2]), .E(wrt_SPI), .CP(clk), .Q(ss_ff[2]), 
+        .QN(n36) );
+  EDFD1BWP \ss_ff_reg[1]  ( .D(ss[1]), .E(wrt_SPI), .CP(clk), .Q(ss_ff[1]), 
+        .QN(n34) );
+  EDFD1BWP \ss_ff_reg[0]  ( .D(ss[0]), .E(wrt_SPI), .CP(clk), .Q(ss_ff[0]), 
+        .QN(n37) );
+  OR2XD1BWP U19 ( .A1(n37), .A2(ss_ff[1]), .Z(n24) );
+  OR2XD1BWP U20 ( .A1(spi_SS_n_ff), .A2(n36), .Z(n25) );
+  AN3XD1BWP U21 ( .A1(n37), .A2(n34), .A3(n23), .Z(n26) );
+  OR2XD1BWP U22 ( .A1(n34), .A2(n31), .Z(n27) );
+  OR2XD1BWP U23 ( .A1(ss_ff[1]), .A2(ss_ff[0]), .Z(n28) );
+  CKND12BWP U24 ( .I(n26), .ZN(trig_ss_n) );
+  CKND12BWP U25 ( .I(n30), .ZN(ch1_ss_n) );
+  CKND0BWP U26 ( .I(n23), .ZN(n31) );
+  NR2XD1BWP U27 ( .A1(n31), .A2(n24), .ZN(n30) );
+  NR2XD0BWP U28 ( .A1(ss_ff[2]), .A2(spi_SS_n_ff), .ZN(n23) );
+  AN3XD1BWP U29 ( .A1(n23), .A2(n37), .A3(ss_ff[1]), .Z(n38) );
+  CKND12BWP U30 ( .I(n38), .ZN(ch2_ss_n) );
+  CKND12BWP U31 ( .I(n33), .ZN(ch3_ss_n) );
+  NR2XD1BWP U32 ( .A1(n37), .A2(n27), .ZN(n33) );
+  CKND12BWP U33 ( .I(n35), .ZN(EEP_ss_n) );
+  NR2XD1BWP U34 ( .A1(n28), .A2(n25), .ZN(n35) );
+endmodule
+

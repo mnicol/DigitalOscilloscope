@@ -165,7 +165,7 @@ end
 ///////////////////////////////////////////
 always_ff @(posedge negSCLKmiso)
 	if (SS_n)
-		data = 16'hzzzz;
+		data = 16'hxxxx;
 	else
 		data = {data[14:0], miff2};
 

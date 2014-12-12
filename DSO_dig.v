@@ -24,6 +24,7 @@ module DSO_dig(clk,rst_n,adc_clk,ch1_data,ch2_data,ch3_data,trig1,trig2,MOSI,MIS
 	wire [8:0] addr;
 	wire en;
 	wire we;
+	wire rclk;
 	
 	wire clr_cmd_rdy;
 	wire cmd_rdy;

@@ -27,14 +27,14 @@ output logic set_done;
 // 		 Logic   	                      //
 ///////////////////////////////////////
 logic strt_dump, incr_addr;
-logic [8:0] dump_addr;
+//logic [8:0] dump_addr;
 logic [7:0] gain;
 logic [7:0] offset;
 logic [7:0] rdata;
 logic [1:0] cmd_cnt;
 logic store_offset;
 logic store_gain;
-//logic done;
+logic done;
 logic set_cmd_rdy;
 logic ram_trmt_ff1, ram_trmt_ff2;
 //logic clr_cmd_rdy;
@@ -42,7 +42,7 @@ logic ram_trmt_ff1, ram_trmt_ff2;
 /////////////////////////////////////////
 // 		 States  	                      //
 ///////////////////////////////////////
-typedef enum reg [1:0] {IDLE, READ, WAIT, GET_OG} state_t;
+typedef enum reg [2:0] {IDLE, READ, WAIT1, WAIT2, WAIT3, GET_OG} state_t;
 state_t state, nxt_state;
 
 always @(posedge clk, negedge rst_n) begin
@@ -182,14 +182,28 @@ always_comb begin
 			end
 			else begin
 				ram_trmt_ff1 = 1'b1;
-				nxt_state = WAIT;
+				nxt_state = WAIT1;
 			end
 
-		WAIT: if (tx_done) begin
+		WAIT1: //if (tx_done) begin
+				//incr_addr = 1'b1;
+			//	nxt_state = READ;
+			//end
+			//else 
+			nxt_state = WAIT2;
+
+		WAIT2: //if (tx_done) begin
+				//incr_addr = 1'b1;
+			//	nxt_state = READ;
+			//end
+			//else 
+			nxt_state = WAIT3;
+
+		WAIT3: if (tx_done) begin
 				incr_addr = 1'b1;
 				nxt_state = READ;
 			end
-			else nxt_state = WAIT;
+			else nxt_state = WAIT3;
 
 		GET_OG: if (data_valid) begin
 				nxt_state = READ;
@@ -237,12 +251,19 @@ end
 
 logic [7:0] sum, sat_sum;
 logic [15:0] prod, sat_prod;
+logic [7:0] ramff1, ramff2;
 
-assign sum = rdata + offset;
-assign sat_sum = (~offset[7] && rdata[7] && ~sum[7]) ? 8'hff :
-									(offset[7] && ~rdata[7] && sum[7]) ? 8'h00 : sum;
+//always_comb begin// @(posedge clk) begin
+assign sum = ramff2 + offset;
+assign sat_sum = (~offset[7] && ramff2[7] && ~sum[7]) ? 8'hff :
+									(offset[7] && ~ramff2[7] && sum[7]) ? 8'h00 : sum;
 assign prod = sat_sum * gain;
 assign sat_prod = (prod[15]) ? 16'h7fff : prod;
 assign ram_tx_data = sat_prod[14:7];
+
+always_ff @(posedge clk) begin
+	ramff1 <= rdata;
+	ramff2 <= ramff1;
+end
 
 endmodule

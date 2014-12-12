@@ -29,21 +29,11 @@ output logic [15:0] EEP_cfg_data;
 output logic [8:0] trig_pos;
 output logic [15:0] SPI_data;
 
-
-/////////////////////////////////////////
-// 		 Internals 	                    //
-///////////////////////////////////////
-//logic [7:0] EEP_cfg_data_set, tx_data_set;
-//logic [1:0] dump_chan_set;
-//logic [8:0] trig_pos_set;
-//logic [3:0] decimator_set;
-//logic [5:0] trig_cfg_set;
-
 logic eep_set_upper, eep_set_lower, tx_set, dec_set, dump_chan_set, dec_set_en, trig_pos_set, 
 							trig_set, gain_addr_set, bad_cmd, send_ack, set_dump_en;
 logic send_resp_ff1, send_resp_ff2;
 logic wrt_SPI_ff1, wrt_SPI_ff2, wrt_SPI_ff3, wrt_SPI_ff4;
-//logic [2:0] pause;
+
 
 ///////////////////////////////////////////
 // Define the two states of the FSM     //
@@ -95,12 +85,6 @@ always_ff @(posedge clk)
 	else
 		EEP_cfg_data <= EEP_cfg_data;
 
-//always_ff @(posedge clk)
-//	if(spi_data_set)
-//		EEP_cfg_data <= EEP_data;
-//	else
-//		EEP_cfg_data <= EEP_cfg_data;
-
 always_ff @(posedge clk)
 	if(eep_set_upper)
 		resp_data <= EEP_data;
@@ -144,12 +128,6 @@ always_ff @(posedge clk)
 		gain_addr <= cmd[12:10];
 	else
 		gain_addr <= gain_addr;
-
-//always_ff @(posedge clk)
-//	if (SPI_done)
-//		pause <= 3'b000;
-//	else
-//		pause <= pause + 1;
 
 always_ff @(posedge clk)
 	eep_done <= eep_set_lower;

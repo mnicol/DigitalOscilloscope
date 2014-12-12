@@ -106,7 +106,7 @@ always_comb begin
 	//////////////////////////////////////////////////////////////
 	// Stay in buffer for 8 clk cycles then move to WAIT
 	//////////////////////////////////////////////////////////////
-	BUFFER: if (!(&cnt_clk[2:0])) begin
+	BUFFER: if (!(&cnt_clk[1:0])) begin
 			SS_n = 0;
 			MOSI = shiftReg[15];
 			nxt_state = BUFFER;
