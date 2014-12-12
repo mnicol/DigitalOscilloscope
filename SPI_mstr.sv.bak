@@ -18,7 +18,7 @@ logic trans16bits;			// Set to 1 when 16 bits have been transmitted
 logic [15:0] shiftReg;	// Shifts one bit at a time out to MOSI
 
 // Flip flops for incoming MISO bits
-logic miff1, miff2, scff1, scff2, scff3, scff4, scff5, negSCLKmiso;
+logic miff1, miff2, scff1, scff2, scff3, scff4, scff5, negSCLKmiso, negSCLKmosi, posSCLKmosi;
 
 ///////////////////////////////////////////
 // Set states to update or reset
@@ -32,7 +32,7 @@ always_ff @(posedge clk, negedge rst_n)
 ///////////////////////////////////////////
 // Set/reset counters to generate SCLK
 ///////////////////////////////////////////
-always_ff @(posedge clk, posedge clr_cnt)
+always_ff @(posedge clk)
 	if (clr_cnt)
 		cnt_clk <= 5'b00000;
 	else
@@ -41,20 +41,24 @@ always_ff @(posedge clk, posedge clr_cnt)
 ///////////////////////////////////////////
 // Count number of times SCLK is high
 ///////////////////////////////////////////
-always_ff @(posedge SCLK, posedge clr_cnt)
+always_ff @(posedge clk)
 	if (clr_cnt)
 		cnt_SCLK <= 5'b00000;
-	else
+	else if (posSCLKmosi)
 		cnt_SCLK <= cnt_SCLK + 1;
+	else
+		cnt_SCLK <= cnt_SCLK;
 
 ///////////////////////////////////////////
 // Set MOSI
 ///////////////////////////////////////////
-always_ff @(negedge SCLK, posedge clr_cnt)
+always_ff @(posedge clk) //, posedge clr_cnt)
 	if (clr_cnt)
 		shiftReg <= cmd;
-	else
+	else if (negSCLKmosi)
 		shiftReg <= {shiftReg, 1'b0};
+	else
+		shiftReg <= shiftReg;
 
 ///////////////////////////////////////////
 // State transition logic
@@ -66,6 +70,7 @@ always_comb begin
 	clr_cnt = 0;
 	trans16bits = cnt_SCLK[4];
 	nxt_state = IDLE;
+	negSCLKmosi = &cnt_clk;
 	MOSI = 1'bz;
 	done = 0;
 
@@ -113,8 +118,13 @@ always_comb begin
 	//////////////////////////////////////////////////////////////
 	// Set done bit and move to IDLE
 	//////////////////////////////////////////////////////////////
-	WAIT: begin done = 1;
-		nxt_state = IDLE;
+	WAIT: if (cnt_clk[3:0]) begin
+			MOSI = shiftReg[15];
+			nxt_state = WAIT;
+		end
+		else begin 
+			done = 1;
+			nxt_state = IDLE;
 		end
 
 	default: nxt_state = IDLE;
@@ -137,6 +147,8 @@ always_ff @(posedge clk, negedge rst_n) begin
 		scff3 <= 0;
 		scff4 <= 0;
 		scff5 <= 0;
+		posSCLKmosi <= 0;
+		negSCLKmiso <= 0;
 	end
 	else begin
 		miff1 <= MISO;
@@ -147,9 +159,10 @@ always_ff @(posedge clk, negedge rst_n) begin
 		scff3 <= scff2;
 		scff4 <= scff3;
 		scff5 <= scff4;
+		posSCLKmosi <= (scff1 & ~scff2);
+		negSCLKmiso <= (~scff4 & scff5);
 	end
 end
-assign negSCLKmiso = (~scff4 & scff5);
 
 ///////////////////////////////////////////
 // Shift MISO bits in

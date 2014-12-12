@@ -1,5 +1,5 @@
 module Analog_Interface(clk, adc_clk, rst_n, trig1, trig2, decimator, trig_cfg,
-									trig_pos, set_cap_done, en, we, addr, trace_end);
+									trig_pos, set_cap_done, en, we, addr, trace_end, rclk);
 
 
 /////////////////////////////////////////

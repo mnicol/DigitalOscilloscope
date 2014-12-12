@@ -5,7 +5,7 @@ module Cmd_Config(clk, rst_n, SPI_data, wrt_SPI, ss, SPI_done, EEP_data,
 
 
 /////////////////////////////////////////
-// 		 Inputs 	                  //
+// 		 Inputs 	                      //
 ///////////////////////////////////////
 input logic clk, rst_n, SPI_done, cmd_rdy, resp_sent, set_cap_done;
 
@@ -14,7 +14,7 @@ input logic [23:0] cmd;
 
 
 /////////////////////////////////////////
-// 		 Outputs 	                  //
+// 		 Outputs 	                      //
 ///////////////////////////////////////
 output logic wrt_SPI, clr_cmd_rdy, send_resp, dump_en, eep_done;
 
@@ -40,11 +40,12 @@ output logic [15:0] SPI_data;
 logic eep_set, tx_set, dec_set, dump_chan_set, dec_set_en, trig_pos_set, 
 							trig_set, gain_addr_set, bad_cmd, send_ack;
 logic send_resp_ff1, send_resp_ff2;
+logic [2:0] pause;
 
 ///////////////////////////////////////////
 // Define the two states of the FSM     //
 /////////////////////////////////////////
-typedef enum reg [1:0] {IDLE, PROC_CMD, RX_SPI, SEND_ACK}state_t;
+typedef enum reg [2:0] {IDLE, PROC_CMD, RX_SPI1, RX_SPI2, RX_SPI3, SEND_ACK, WR_EEP, PAUSE}state_t;
 state_t state, nxt_state;
 
 ///////////////////////////
@@ -121,6 +122,12 @@ always_ff @(posedge clk)
 		gain_addr <= gain_addr;
 
 always_ff @(posedge clk)
+	if (SPI_done)
+		pause <= 3'b000;
+	else
+		pause <= pause + 1;
+
+always_ff @(posedge clk)
 	eep_done <= eep_set;
 
 ///////////////////////////////////////////////////
@@ -147,6 +154,7 @@ always_comb begin
 	bad_cmd = 0;
 	send_ack = 0;
 	clr_cmd_rdy = 0;
+	//clr_spi_done_cnt = 0;
 	nxt_state = IDLE;
 	
 	case (state)
@@ -333,9 +341,10 @@ always_comb begin
 							ss = 3'b100;	// Select EEPROM
 							SPI_data = {2'b01, cmd[13:0]};
 							wrt_SPI = 1;
-							send_resp_ff1 = 1;
-							send_ack = 1;
-							nxt_state = SEND_ACK;
+							nxt_state = WR_EEP;
+							//send_resp_ff1 = 1;
+							//send_ack = 1;
+							//nxt_state = SEND_ACK;
 						end
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
@@ -350,7 +359,8 @@ always_comb begin
 							SPI_data = {2'b00, cmd[13:8], 8'hxx};
 							//spi_data_set = 1;
 							wrt_SPI = 1;
-							nxt_state = RX_SPI;
+							//clr_spi_done_cnt = 1;
+							nxt_state = RX_SPI1;
 						end
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
@@ -369,22 +379,45 @@ always_comb begin
 			endcase
 		end
 
-		RX_SPI: if(!SPI_done)
+		RX_SPI1: if(!SPI_done)
 				begin
-					// Wait for valid data
-					nxt_state = RX_SPI;
+					nxt_state = RX_SPI1;
 				end
-		else	begin
-					//read data
-					//EEP_cfg_data_set = EEP_data;
+				else begin
+					nxt_state = PAUSE;
+				end
+
+		RX_SPI2: if(!SPI_done)
+				begin
+					nxt_state = RX_SPI2;
+				end 
+				else begin
 					eep_set = 1;
-					//resp_data = 8'hEE;
-					//send_ack = 1;
 					send_resp_ff1 = 1;
 					clr_cmd_rdy = 1;
 					nxt_state = IDLE;
-				end
+				end 
+		
+		RX_SPI3: if(!SPI_done)
+				begin
+					nxt_state = RX_SPI2;
+				end 
+				else begin
+					eep_set = 1;
+					send_resp_ff1 = 1;
+					clr_cmd_rdy = 1;
+					nxt_state = IDLE;
+				end 
 
+		PAUSE: if (&pause) begin
+				ss = 3'b100;	// Select EEPROM
+				SPI_data = {2'b00, cmd[13:8], 8'hxx};
+				wrt_SPI = 1;
+				nxt_state = RX_SPI2;
+			end
+			else begin
+				nxt_state = PAUSE;
+			end
 
 		SEND_ACK: if(!resp_sent)
 			begin
@@ -395,6 +428,16 @@ always_comb begin
 				clr_cmd_rdy = 1;
 				nxt_state = IDLE;
 			end
+
+		WR_EEP: if(!SPI_done) begin
+					// Wait for valid data
+				nxt_state = WR_EEP;
+			end
+		else begin
+			send_resp_ff1 = 1;
+			send_ack = 1;
+			nxt_state = SEND_ACK;
+		end
 
 
 	endcase

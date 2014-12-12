@@ -118,8 +118,9 @@ always_comb begin
 	//////////////////////////////////////////////////////////////
 	// Set done bit and move to IDLE
 	//////////////////////////////////////////////////////////////
-	WAIT: begin done = 1;
-		nxt_state = IDLE;
+	WAIT: begin 
+			done = 1;
+			nxt_state = IDLE;
 		end
 
 	default: nxt_state = IDLE;

@@ -34,12 +34,14 @@ module DSO_dig(clk,rst_n,adc_clk,ch1_data,ch2_data,ch3_data,trig1,trig2,MOSI,MIS
 	wire SPI_done;
 	wire [2:0]ss;
 	wire [7:0] EEP_data;
-	wire [15:0] SPI_resp;
-		assign EEP_resp = {8'hxx, EEP_data};
+	wire [15:0] EEP_resp;
+		//assign EEP_resp = {8'hxx, EEP_data};
 	wire [7:0] resp_data;
 	wire send_resp;
 	wire resp_sent;
 	wire [7:0] ch1_rdata, ch2_rdata, ch3_rdata;
+	reg [2:0] ss_ff;
+	reg spi_SS_n_ff;
 
 	
 
@@ -55,11 +57,14 @@ module DSO_dig(clk,rst_n,adc_clk,ch1_data,ch2_data,ch3_data,trig1,trig2,MOSI,MIS
   // 5 individual SS needed (3 AFE, 1 Trigger, 1 EEP)       //
   ///////////////////////////////////////////////////////////
 
-	assign trig_ss_n = (ss == 3'b000) ? spi_SS_n : 1'b1;
-	assign ch1_ss_n = (ss == 3'b001) ? spi_SS_n : 1'b1;
-	assign ch2_ss_n = (ss == 3'b010) ? spi_SS_n : 1'b1;
-	assign ch3_ss_n = (ss == 3'b011) ? spi_SS_n : 1'b1;
-	assign EEP_ss_n = (ss == 3'b100) ? spi_SS_n : 1'b1;
+always @(posedge clk) if (wrt_SPI) ss_ff <= ss;
+always @(posedge clk) spi_SS_n_ff <= spi_SS_n;
+
+	assign trig_ss_n = (ss_ff == 3'b000) ? spi_SS_n_ff : 1'b1;
+	assign ch1_ss_n = (ss_ff == 3'b001) ? spi_SS_n_ff : 1'b1;
+	assign ch2_ss_n = (ss_ff == 3'b010) ? spi_SS_n_ff : 1'b1;
+	assign ch3_ss_n = (ss_ff == 3'b011) ? spi_SS_n_ff : 1'b1;
+	assign EEP_ss_n = (ss_ff == 3'b100) ? spi_SS_n_ff : 1'b1;
   
   ///////////////////////////////////
   // Instantiate UART_comm module //
@@ -72,7 +77,7 @@ module DSO_dig(clk,rst_n,adc_clk,ch1_data,ch2_data,ch3_data,trig1,trig2,MOSI,MIS
   /////////////////////////
 	dig_core iDC(.clk(clk), .rst_n(rst_n), .adc_clk(adc_clk), .trig1(trig1), .trig2(trig2),
 					.SPI_data(SPI_data), .wrt_SPI(wrt_SPI), .SPI_done(SPI_done), .ss(ss),
-					.EEP_data(EEP_data), .rclk(rclk), .en(en), .we(we), .addr(addr), 
+					.EEP_data(EEP_resp[7:0]), .rclk(rclk), .en(en), .we(we), .addr(addr), 
 					.ch1_rdata(ch1_rdata), .ch2_rdata(ch2_rdata), .ch3_rdata(ch3_rdata), .cmd(cmd),
 					.cmd_rdy(cmd_rdy), .clr_cmd_rdy(clr_cmd_rdy), .resp_data(resp_data),
 					.send_resp(send_resp), .resp_sent(resp_sent));

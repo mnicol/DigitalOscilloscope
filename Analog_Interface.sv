@@ -26,7 +26,7 @@ logic set_trace_end;
 logic src_ff1, src_ff2, src_ff3;							// Flip flops for asynchronous trigger inputs
 logic trig_w, trig_set, trig_ff;							// Wires for intermediate signals
 logic keep, keep_ff, clr_dec_cnt, en_dec_cnt, clr_trig_cnt;
-logic [3:0] dec_cnt, dec_pwr;									// keep logic stuff
+logic [15:0] dec_cnt, dec_pwr;									// keep logic stuff
 	assign dec_pwr = 1 << (decimator);
 logic [9:0] smpl_cnt, trig_cnt;								// keeps track of samples capured
 logic auto, normal, cap_done;
