@@ -9,7 +9,7 @@ input logic clk, rst_n, cap_en, dump_en, we, tx_done;
 input logic [8:0] trace_end, cap_addr;
 input logic [1:0] dump_chan;
 input logic [7:0] ch1_rdata, ch2_rdata, ch3_rdata;
-input logic [7:0] og_data;
+input logic [15:0] og_data;
 input logic [2:0] og_addr;
 input logic data_valid;
 //input logic clr_cmd_rdy;
@@ -84,16 +84,16 @@ end
 /////////////////////////////////////////
 // 		 Increment cmd_cnt              //
 ///////////////////////////////////////
-always_ff @(posedge clk, negedge rst_n) begin
-	if (!rst_n)
-		cmd_cnt <= 2'b00;
-	else if (tx_done)
-		cmd_cnt <= 2'b00;
-	else if (set_cmd_rdy)
-		cmd_cnt <= cmd_cnt + 1;
-	else
-		cmd_cnt <= cmd_cnt;
-end
+//always_ff @(posedge clk, negedge rst_n) begin
+//	if (!rst_n)
+//		cmd_cnt <= 2'b00;
+//	else if (tx_done)
+//		cmd_cnt <= 2'b00;
+//	else if (set_cmd_rdy)
+//		cmd_cnt <= cmd_cnt + 1;
+//	else
+//		cmd_cnt <= cmd_cnt;
+//end
 
 /////////////////////////////////////////
 // 		 Set en  	                      //
@@ -135,22 +135,24 @@ end
 /////////////////////////////////////////
 // 		 set offset                     //
 ///////////////////////////////////////
-always_ff @(posedge clk) begin
-	if (store_offset)
-		offset <= og_data;
-	else
-		offset <= offset;
-end	
+//always_ff @(posedge clk) begin
+//	if (store_offset)
+//		offset <= og_data;
+//	else
+//		offset <= offset;
+//end	
+assign offest = og_data[15:8];
 
 /////////////////////////////////////////
 // 		 set gain                       //
 ///////////////////////////////////////
-always_ff @(posedge clk) begin
-	if (store_gain)
-		gain <= og_data;
-	else
-		gain <= gain;
-end	
+//always_ff @(posedge clk) begin
+//	if (store_gain)
+//		gain <= og_data;
+//	else
+//		gain <= gain;
+//end	
+assign gain = og_data[7:0];
 
 always_comb begin
 	strt_dump = 1'b0;
@@ -185,17 +187,17 @@ always_comb begin
 			end
 			else nxt_state = WAIT;
 
-		GET_OG: if (&cmd_cnt && data_valid) begin
+		GET_OG: if (data_valid) begin
 				nxt_state = READ;
-				store_gain = 1'b1;
+				//cmd_rdy = 1;
 				strt_dump = 1'b1;
 			end
-			else if (data_valid) begin
-				nxt_state = GET_OG;
-				//set_cmd_rdy = 1'b1;
-				cmd_rdy = 1;
-				store_offset = 1'b1;
-			end
+			//else if (data_valid) begin
+			//	nxt_state = GET_OG;
+			//	//set_cmd_rdy = 1'b1;
+			//	cmd_rdy = 1;
+			//	store_offset = 1'b1;
+			//end
 			else begin
 				nxt_state = GET_OG;
 				cmd_rdy = 1;

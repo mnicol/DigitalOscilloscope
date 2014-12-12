@@ -23,7 +23,8 @@ output logic [2:0] ss, gain_addr;
 output logic [3:0] decimator;
 
 output logic [7:0] trig_cfg;
-output logic [7:0] resp_data, EEP_cfg_data;
+output logic [7:0] resp_data;
+output logic [15:0] EEP_cfg_data;
 output logic [8:0] trig_pos;
 output logic [15:0] SPI_data;
 
@@ -37,15 +38,16 @@ output logic [15:0] SPI_data;
 //logic [3:0] decimator_set;
 //logic [5:0] trig_cfg_set;
 
-logic eep_set, tx_set, dec_set, dump_chan_set, dec_set_en, trig_pos_set, 
+logic eep_set_upper, eep_set_lower, tx_set, dec_set, dump_chan_set, dec_set_en, trig_pos_set, 
 							trig_set, gain_addr_set, bad_cmd, send_ack;
 logic send_resp_ff1, send_resp_ff2;
-logic [2:0] pause;
+logic wrt_SPI_ff1, wrt_SPI_ff2, wrt_SPI_ff3, wrt_SPI_ff4;
+//logic [2:0] pause;
 
 ///////////////////////////////////////////
 // Define the two states of the FSM     //
 /////////////////////////////////////////
-typedef enum reg [2:0] {IDLE, PROC_CMD, RX_SPI1, RX_SPI2, RX_SPI3, SEND_ACK, WR_EEP, PAUSE}state_t;
+typedef enum reg [2:0] {IDLE, PROC_CMD, RX_SPI1, RX_SPI2, RX_SPI3, SEND_ACK, WR_EEP}state_t;
 state_t state, nxt_state;
 
 ///////////////////////////
@@ -65,9 +67,21 @@ always_ff @(posedge clk) begin
 	send_resp <= send_resp_ff2;
 end
 
+///////////////////////////////////////////////
+// Delay wrt_SPI until last rd done         //
+/////////////////////////////////////////////
+always_ff @(posedge clk) begin
+	wrt_SPI_ff2 <= wrt_SPI_ff1;
+	wrt_SPI_ff3 <= wrt_SPI_ff2;
+	wrt_SPI_ff4 <= wrt_SPI_ff3;
+	wrt_SPI <= wrt_SPI_ff4;
+end
+
 always_ff @(posedge clk)
-	if(eep_set)
-		EEP_cfg_data <= EEP_data;
+	if(eep_set_upper)
+		EEP_cfg_data[15:8] <= EEP_data;
+	else if (eep_set_lower)
+		EEP_cfg_data[7:0] <= EEP_data;
 	else
 		EEP_cfg_data <= EEP_cfg_data;
 
@@ -78,7 +92,7 @@ always_ff @(posedge clk)
 //		EEP_cfg_data <= EEP_cfg_data;
 
 always_ff @(posedge clk)
-	if(eep_set)
+	if(eep_set_upper)
 		resp_data <= EEP_data;
 	else if(tx_set)
 		resp_data <= {2'b00, trig_cfg[5:0]};
@@ -121,14 +135,14 @@ always_ff @(posedge clk)
 	else
 		gain_addr <= gain_addr;
 
-always_ff @(posedge clk)
-	if (SPI_done)
-		pause <= 3'b000;
-	else
-		pause <= pause + 1;
+//always_ff @(posedge clk)
+//	if (SPI_done)
+//		pause <= 3'b000;
+//	else
+//		pause <= pause + 1;
 
 always_ff @(posedge clk)
-	eep_done <= eep_set;
+	eep_done <= eep_set_lower;
 
 ///////////////////////////////////////////////////
 // Logic to determine next state and outputs    //
@@ -136,13 +150,14 @@ always_ff @(posedge clk)
 always_comb begin
 	//Default values
 	ss = ss;
-	wrt_SPI = 0;
+	wrt_SPI_ff1 = 0;
 	//SPI_data = 16'hxxxx;
 	SPI_data = SPI_data;
 	dump_en = 1'b0;
  	send_resp_ff1 = 1'b0;
 	//resp_data = 8'hA5;
-	eep_set = 0;
+	eep_set_upper = 0;
+	eep_set_lower = 0;;
 	tx_set = 0;
 	dump_chan_set = 0;
 	dec_set = 0;
@@ -222,7 +237,7 @@ always_comb begin
 								3'b111: SPI_data = 16'h13DD;
 								default: SPI_data = 16'h0000;
 							endcase
-							wrt_SPI = 1;
+							wrt_SPI_ff1 = 1;
 							//gain = cmd[12:10];
 							gain_addr_set = 1;
 							//resp_data = 8'hA5; //default should send error ack
@@ -252,7 +267,7 @@ always_comb begin
 								SPI_data = {8'h13, 8'hC9};	// Saturate to 201
 							else
 								SPI_data = {8'h13, cmd[7:0]};
-							wrt_SPI = 1;
+							wrt_SPI_ff1 = 1;
 							//resp_data = 8'hA5; //default should send error ack
 							send_resp_ff1 = 1;
 							send_ack = 1;
@@ -340,7 +355,7 @@ always_comb begin
 				8'hx8:	begin
 							ss = 3'b100;	// Select EEPROM
 							SPI_data = {2'b01, cmd[13:0]};
-							wrt_SPI = 1;
+							wrt_SPI_ff1 = 1;
 							nxt_state = WR_EEP;
 							//send_resp_ff1 = 1;
 							//send_ack = 1;
@@ -358,7 +373,7 @@ always_comb begin
 							ss = 3'b100;	// Select EEPROM
 							SPI_data = {2'b00, cmd[13:8], 8'hxx};
 							//spi_data_set = 1;
-							wrt_SPI = 1;
+							wrt_SPI_ff1 = 1;
 							//clr_spi_done_cnt = 1;
 							nxt_state = RX_SPI1;
 						end
@@ -384,7 +399,10 @@ always_comb begin
 					nxt_state = RX_SPI1;
 				end
 				else begin
-					nxt_state = PAUSE;
+					ss = 3'b100;	// Select EEPROM
+					SPI_data = {2'b00, cmd[13:7], 9'h1xx};
+					wrt_SPI_ff1 = 1;
+					nxt_state = RX_SPI2;
 				end
 
 		RX_SPI2: if(!SPI_done)
@@ -392,32 +410,35 @@ always_comb begin
 					nxt_state = RX_SPI2;
 				end 
 				else begin
-					eep_set = 1;
+					ss = 3'b100;	// Select EEPROM
+					SPI_data = {2'b00, cmd[13:8], 8'hxx};
+					wrt_SPI_ff1 = 1;
+					eep_set_upper = 1;
 					send_resp_ff1 = 1;
 					clr_cmd_rdy = 1;
-					nxt_state = IDLE;
+					nxt_state = RX_SPI3;
 				end 
 		
 		RX_SPI3: if(!SPI_done)
 				begin
-					nxt_state = RX_SPI2;
+					nxt_state = RX_SPI3;
 				end 
 				else begin
-					eep_set = 1;
-					send_resp_ff1 = 1;
+					eep_set_lower = 1;
+					//send_resp_ff1 = 1;
 					clr_cmd_rdy = 1;
 					nxt_state = IDLE;
 				end 
 
-		PAUSE: if (&pause) begin
-				ss = 3'b100;	// Select EEPROM
-				SPI_data = {2'b00, cmd[13:8], 8'hxx};
-				wrt_SPI = 1;
-				nxt_state = RX_SPI2;
-			end
-			else begin
-				nxt_state = PAUSE;
-			end
+//		PAUSE: if (&pause) begin
+//				ss = 3'b100;	// Select EEPROM
+//				SPI_data = {2'b00, cmd[13:8], 8'hxx};
+//				wrt_SPI = 1;
+//				nxt_state = RX_SPI2;
+//			end
+//			else begin
+//				nxt_state = PAUSE;
+//			end
 
 		SEND_ACK: if(!resp_sent)
 			begin

@@ -87,7 +87,7 @@ Analog_Interface iAnaI(.clk(clk), .adc_clk(adc_clk), .rst_n(rst_n), .trig1(trig1
 RAM_Interface iRAMI(.clk(clk), .rst_n(rst_n), .trace_end(trace_end), .cap_en(cap_en),
 			.cap_addr(cap_addr), .dump_en(dump_en), .dump_chan(dump_chan), .we(we), .ch1_rdata(ch1_rdata),
 			.ch2_rdata(ch2_rdata), .ch3_rdata(ch3_rdata), .og_data(EEP_cfg_data), .data_valid(eep_done),
-			.addr(addr), .en(en), .ram_trmt(ram_trmt_in), .tx_done(resp_sent), .ram_tx_data(ram_tx_data),
+			.addr(addr), .en(en), .ram_trmt(ram_trmt), .tx_done(resp_sent), .ram_tx_data(ram_tx_data),
 			.cmd_rdy(ram_cmd_rdy), .cmd(ram_cmd), .og_addr(og_addr));//, .clr_cmd_rdy(clr_cmd_rdy));
 
 Cmd_Config iCC(.clk(clk), .rst_n(rst_n), .SPI_data(SPI_data), .wrt_SPI(wrt_SPI), .ss(ss),
