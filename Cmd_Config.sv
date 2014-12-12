@@ -139,11 +139,9 @@ always_comb begin
 	//Default values
 	ss = ss;
 	wrt_SPI_ff1 = 0;
-	//SPI_data = 16'hxxxx;
 	SPI_data = SPI_data;
 	set_dump_en = 1'b0;
  	send_resp_ff1 = 1'b0;
-	//resp_data = 8'hA5;
 	eep_set_upper = 0;
 	eep_set_lower = 0;;
 	tx_set = 0;
@@ -152,12 +150,9 @@ always_comb begin
 	trig_pos_set = 0;
 	trig_set = 0;
 	gain_addr_set = 0;
-	//spi_data_set = 0;
-	//send_resp = 1;
 	bad_cmd = 0;
 	send_ack = 0;
 	clr_cmd_rdy = 0;
-	//clr_spi_done_cnt = 0;
 	nxt_state = IDLE;
 	
 	case (state)
@@ -186,11 +181,9 @@ always_comb begin
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 				8'hx1:	begin
 							if( cmd[9:8] != 2'b11 ) begin
-								//dump_chan_set = cmd[9:8];
 								dump_chan_set = 1;
 								set_dump_en = 1'b1;
 							end
-							//resp_data = 8'hA5; //default should send error ack
 							send_resp_ff1 = 1;
 							send_ack = 1;
 							nxt_state = SEND_ACK;
@@ -226,9 +219,7 @@ always_comb begin
 								default: SPI_data = 16'h0000;
 							endcase
 							wrt_SPI_ff1 = 1;
-							//gain = cmd[12:10];
 							gain_addr_set = 1;
-							//resp_data = 8'hA5; //default should send error ack
 							send_resp_ff1 = 1;
 							send_ack = 1;
 							nxt_state = SEND_ACK;
@@ -256,7 +247,6 @@ always_comb begin
 							else
 								SPI_data = {8'h13, cmd[7:0]};
 							wrt_SPI_ff1 = 1;
-							//resp_data = 8'hA5; //default should send error ack
 							send_resp_ff1 = 1;
 							send_ack = 1;
 							nxt_state = SEND_ACK;
@@ -272,9 +262,7 @@ always_comb begin
  *																 *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 				8'hx4:	begin
-							//trig_pos_set = cmd[8:0];
-							trig_pos_set = 1;
-							//resp_data = 8'hA5; //default should send error ack
+							trig_pos_set = 1;
 							send_resp_ff1 = 1;
 							send_ack = 1;
 							nxt_state = SEND_ACK;
@@ -289,9 +277,7 @@ always_comb begin
  *																 *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 				8'hx5:	begin
-							//decimator_set = cmd[3:0];
-							dec_set = 1;
-							//resp_data = 8'hA5; //default should send error ack
+							dec_set = 1;
 							send_resp_ff1 = 1;
 							send_ack = 1;
 							nxt_state = SEND_ACK;
@@ -307,9 +293,7 @@ always_comb begin
  *																 *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 				8'hx6:	begin
-							//trig_cfg_set[5:0] = cmd[13:8];
-							trig_set = 1;
-							//resp_data = 8'hA5; //default should send error ack
+							trig_set = 1;
 							send_resp_ff1 = 1;
 							send_ack = 1;
 							nxt_state = SEND_ACK;
@@ -324,10 +308,8 @@ always_comb begin
  *																 *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 				8'hx7:	begin
-							//tx_data_set = {2'b00, trig_cfg[5:0]};
 							tx_set = 1;
-							//resp_data = {2'b00, trig_cfg[5:0]};
-							send_resp_ff1 = 1'b1; //Might need extra state to wait for done
+							send_resp_ff1 = 1'b1;
 							clr_cmd_rdy = 1;
 							nxt_state = IDLE;
 						end
@@ -345,9 +327,6 @@ always_comb begin
 							SPI_data = {2'b01, cmd[13:0]};
 							wrt_SPI_ff1 = 1;
 							nxt_state = WR_EEP;
-							//send_resp_ff1 = 1;
-							//send_ack = 1;
-							//nxt_state = SEND_ACK;
 						end
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
@@ -360,9 +339,7 @@ always_comb begin
 				8'hx9:	begin
 							ss = 3'b100;	// Select EEPROM
 							SPI_data = {2'b00, cmd[13:8], 8'hxx};
-							//spi_data_set = 1;
 							wrt_SPI_ff1 = 1;
-							//clr_spi_done_cnt = 1;
 							nxt_state = RX_SPI1;
 						end
 
@@ -372,7 +349,6 @@ always_comb begin
  *																 *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 				default: begin 
-							//resp_data = 8'hEE;
 							bad_cmd = 1;
 							send_resp_ff1 = 1;
 							send_ack = 1;
@@ -399,7 +375,6 @@ always_comb begin
 				end 
 				else begin
 					ss = 3'b100;	// Select EEPROM
-					//SPI_data = {2'b00, cmd[13:8], 8'hxx};
 					wrt_SPI_ff1 = 1;
 					eep_set_upper = 1;
 					send_resp_ff1 = 1;
@@ -413,24 +388,12 @@ always_comb begin
 				end 
 				else begin
 					eep_set_lower = 1;
-					//send_resp_ff1 = 1;
 					clr_cmd_rdy = 1;
 					nxt_state = IDLE;
 				end 
 
-//		PAUSE: if (&pause) begin
-//				ss = 3'b100;	// Select EEPROM
-//				SPI_data = {2'b00, cmd[13:8], 8'hxx};
-//				wrt_SPI = 1;
-//				nxt_state = RX_SPI2;
-//			end
-//			else begin
-//				nxt_state = PAUSE;
-//			end
-
 		SEND_ACK: if(!resp_sent)
 			begin
-				//sending = 1;
 				nxt_state = SEND_ACK;
 			end
 		else begin

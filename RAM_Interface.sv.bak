@@ -42,7 +42,7 @@ logic ram_trmt_ff1, ram_trmt_ff2;
 /////////////////////////////////////////
 // 		 States  	                      //
 ///////////////////////////////////////
-typedef enum reg [2:0] {IDLE, READ, WAIT1, WAIT2, WAIT3, GET_OG} state_t;
+typedef enum reg [2:0] {IDLE, READ, WAIT, GET_OG} state_t;
 state_t state, nxt_state;
 
 always @(posedge clk, negedge rst_n) begin
@@ -171,7 +171,6 @@ always_comb begin
 	case (state)
 		IDLE: if (!we & dump_en) begin
 				nxt_state = GET_OG;
-				//set_cmd_rdy = 1'b1;
 				cmd_rdy = 1;
 			end
 			else nxt_state = IDLE;
@@ -182,28 +181,15 @@ always_comb begin
 			end
 			else begin
 				ram_trmt_ff1 = 1'b1;
-				nxt_state = WAIT1;
+				nxt_state = WAIT;
 			end
 
-		WAIT1: //if (tx_done) begin
-				//incr_addr = 1'b1;
-			//	nxt_state = READ;
-			//end
-			//else 
-			nxt_state = WAIT2;
-
-		WAIT2: //if (tx_done) begin
-				//incr_addr = 1'b1;
-			//	nxt_state = READ;
-			//end
-			//else 
-			nxt_state = WAIT3;
-
-		WAIT3: if (tx_done) begin
+		WAIT: if (tx_done) begin
 				incr_addr = 1'b1;
 				nxt_state = READ;
 			end
-			else nxt_state = WAIT3;
+			else 
+			nxt_state = WAIT;
 
 		GET_OG: if (data_valid) begin
 				nxt_state = READ;
@@ -233,37 +219,14 @@ end
 // 		 offset/gain correction         //
 ///////////////////////////////////////
 
-//logic signed [9:0] w1a, w1b;	// Signed to recognize neg values
-//logic [15:0] w2a, w2b;
-
-// Used if subtracting offset from unsigned raw data
-//logic signed [7:0] opp_offset;
-//assign opp_offset = ~(offset) + 1;
-
-// Add or subtract offset and check if saturation needed
-//assign w1a = offset[7] ? (rdata - opp_offset) : (rdata + offset);
-//assign w1b = w1a[9] ? 8'h00 : ((w1a[8] & ~w1a[9]) ? 8'hFF : w1a);
-
-// Multiply and check if saturation needed before dividing
-//assign w2a = (gain * w1b);
-//assign w2b = w2a[15] ? (15'h7FFF) : w2a;
-//assign ram_tx_data = w2b[14:7];
-
 logic [7:0] sum, sat_sum;
 logic [15:0] prod, sat_prod;
-logic [7:0] ramff1, ramff2;
 
-//always_comb begin// @(posedge clk) begin
-assign sum = ramff2 + offset;
-assign sat_sum = (~offset[7] && ramff2[7] && ~sum[7]) ? 8'hff :
-									(offset[7] && ~ramff2[7] && sum[7]) ? 8'h00 : sum;
+assign sum = rdata + offset;
+assign sat_sum = (~offset[7] && rdata[7] && ~sum[7]) ? 8'hff :
+									(offset[7] && ~rdata[7] && sum[7]) ? 8'h00 : sum;
 assign prod = sat_sum * gain;
 assign sat_prod = (prod[15]) ? 16'h7fff : prod;
 assign ram_tx_data = sat_prod[14:7];
-
-always_ff @(posedge clk) begin
-	ramff1 <= rdata;
-	ramff2 <= ramff1;
-end
 
 endmodule

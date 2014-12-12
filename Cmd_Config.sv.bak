@@ -85,7 +85,6 @@ always_ff @(posedge clk)
 	else
 		EEP_cfg_data <= EEP_cfg_data;
 
-
 always_ff @(posedge clk)
 	if(eep_set_upper)
 		resp_data <= EEP_data;
@@ -129,12 +128,6 @@ always_ff @(posedge clk)
 		gain_addr <= cmd[12:10];
 	else
 		gain_addr <= gain_addr;
-
-//always_ff @(posedge clk)
-//	if (SPI_done)
-//		pause <= 3'b000;
-//	else
-//		pause <= pause + 1;
 
 always_ff @(posedge clk)
 	eep_done <= eep_set_lower;
