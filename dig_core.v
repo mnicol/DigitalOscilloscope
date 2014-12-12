@@ -45,15 +45,21 @@ module dig_core(clk,rst_n,adc_clk,trig1,trig2,SPI_data,wrt_SPI,SPI_done,ss,EEP_d
 	wire ram_cmd_rdy;
 	reg [23:0] cmd_used;
 	wire cmd_rdy_used;
+	//wire send_resp_in;
+	wire send_resp_cc;
+	//wire ram_trmt_in;
+	//reg ram_trmt_ff;
 
+	//assign send_resp = send_resp_ff;
 	assign en = cap_en | dump_en;
 	assign resp_data = resp_data_ff;
-	assign trmt = send_resp | ram_trmt;
+	//assign send_resp = send_resp_ff | ram_trmt_ff;
+	assign send_resp = send_resp_cc | ram_trmt;
 	//assign cmd_used = cmd_rdy ? cmd : ram_cmd;
 	assign cmd_rdy_used = cmd_rdy | ram_cmd_rdy;
 
 	always @(posedge clk)
-		if (send_resp)
+		if (send_resp_cc)
 			resp_data_ff <= cc_resp_data;
 		else if (ram_trmt)
 			resp_data_ff <= ram_tx_data;
@@ -68,6 +74,8 @@ module dig_core(clk,rst_n,adc_clk,trig1,trig2,SPI_data,wrt_SPI,SPI_done,ss,EEP_d
 		else
 			cmd_used <= cmd_used;
 	
+	//always@(posedge clk) send_resp_ff <= send_resp_in;
+	//always@(posedge clk) ram_trmt_ff <= ram_trmt_in;
  
   ///////////////////////////////////////////////////////
   // Instantiate the blocks of your digital core next //
@@ -84,7 +92,7 @@ RAM_Interface iRAMI(.clk(clk), .rst_n(rst_n), .trace_end(trace_end), .cap_en(cap
 
 Cmd_Config iCC(.clk(clk), .rst_n(rst_n), .SPI_data(SPI_data), .wrt_SPI(wrt_SPI), .ss(ss),
 			.SPI_done(SPI_done), .EEP_data(EEP_data), .cmd(cmd_used), .cmd_rdy(cmd_rdy_used),
-			.clr_cmd_rdy(clr_cmd_rdy), .resp_data(cc_resp_data), .send_resp(send_resp),
+			.clr_cmd_rdy(clr_cmd_rdy), .resp_data(cc_resp_data), .send_resp(send_resp_cc),
 			.resp_sent(resp_sent), .decimator(decimator), .set_cap_done(set_cap_done),
 			.dump_chan(dump_chan), .dump_en(dump_en), .trig_cfg(trig_cfg), .trig_pos(trig_pos), 
 			.EEP_cfg_data(EEP_cfg_data), .eep_done(eep_done), .gain_addr(og_addr));

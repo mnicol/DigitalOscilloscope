@@ -39,6 +39,7 @@ output logic [15:0] SPI_data;
 
 logic eep_set, tx_set, dec_set, dump_chan_set, dec_set_en, trig_pos_set, 
 							trig_set, gain_addr_set, bad_cmd, send_ack;
+logic send_resp_ff1, send_resp_ff2;
 
 ///////////////////////////////////////////
 // Define the two states of the FSM     //
@@ -55,6 +56,14 @@ always_ff @(posedge clk, negedge rst_n)
 	else
     	state <= nxt_state;
 
+///////////////////////////////////////////////
+// Delay send_resp until resp_data ready    //
+/////////////////////////////////////////////
+always_ff @(posedge clk) begin
+	send_resp_ff2 <= send_resp_ff1;
+	send_resp <= send_resp_ff2;
+end
+
 always_ff @(posedge clk)
 	if(eep_set)
 		EEP_cfg_data <= EEP_data;
@@ -69,7 +78,7 @@ always_ff @(posedge clk)
 
 always_ff @(posedge clk)
 	if(eep_set)
-		resp_data <= SPI_data[7:0];
+		resp_data <= EEP_data;
 	else if(tx_set)
 		resp_data <= {2'b00, trig_cfg[5:0]};
 	else if (bad_cmd)
@@ -124,7 +133,7 @@ always_comb begin
 	//SPI_data = 16'hxxxx;
 	SPI_data = SPI_data;
 	dump_en = 1'b0;
- 	send_resp = 1'b0;
+ 	send_resp_ff1 = 1'b0;
 	//resp_data = 8'hA5;
 	eep_set = 0;
 	tx_set = 0;
@@ -171,7 +180,7 @@ always_comb begin
 								dump_en = 1'b1;
 							end
 							//resp_data = 8'hA5; //default should send error ack
-							send_resp = 1;
+							send_resp_ff1 = 1;
 							send_ack = 1;
 							nxt_state = SEND_ACK;
 						end
@@ -209,7 +218,7 @@ always_comb begin
 							//gain = cmd[12:10];
 							gain_addr_set = 1;
 							//resp_data = 8'hA5; //default should send error ack
-							send_resp = 1;
+							send_resp_ff1 = 1;
 							send_ack = 1;
 							nxt_state = SEND_ACK;
 						end
@@ -237,7 +246,7 @@ always_comb begin
 								SPI_data = {8'h13, cmd[7:0]};
 							wrt_SPI = 1;
 							//resp_data = 8'hA5; //default should send error ack
-							send_resp = 1;
+							send_resp_ff1 = 1;
 							send_ack = 1;
 							nxt_state = SEND_ACK;
 						end
@@ -255,7 +264,7 @@ always_comb begin
 							//trig_pos_set = cmd[8:0];
 							trig_pos_set = 1;
 							//resp_data = 8'hA5; //default should send error ack
-							send_resp = 1;
+							send_resp_ff1 = 1;
 							send_ack = 1;
 							nxt_state = SEND_ACK;
 						end
@@ -272,7 +281,7 @@ always_comb begin
 							//decimator_set = cmd[3:0];
 							dec_set = 1;
 							//resp_data = 8'hA5; //default should send error ack
-							send_resp = 1;
+							send_resp_ff1 = 1;
 							send_ack = 1;
 							nxt_state = SEND_ACK;
 						end
@@ -290,7 +299,7 @@ always_comb begin
 							//trig_cfg_set[5:0] = cmd[13:8];
 							trig_set = 1;
 							//resp_data = 8'hA5; //default should send error ack
-							send_resp = 1;
+							send_resp_ff1 = 1;
 							send_ack = 1;
 							nxt_state = SEND_ACK;
 						end
@@ -307,7 +316,7 @@ always_comb begin
 							//tx_data_set = {2'b00, trig_cfg[5:0]};
 							tx_set = 1;
 							//resp_data = {2'b00, trig_cfg[5:0]};
-							send_resp = 1'b1; //Might need extra state to wait for done
+							send_resp_ff1 = 1'b1; //Might need extra state to wait for done
 							clr_cmd_rdy = 1;
 							nxt_state = IDLE;
 						end
@@ -324,7 +333,7 @@ always_comb begin
 							ss = 3'b100;	// Select EEPROM
 							SPI_data = {2'b01, cmd[13:0]};
 							wrt_SPI = 1;
-							send_resp = 1;
+							send_resp_ff1 = 1;
 							send_ack = 1;
 							nxt_state = SEND_ACK;
 						end
@@ -352,7 +361,7 @@ always_comb begin
 				default: begin 
 							//resp_data = 8'hEE;
 							bad_cmd = 1;
-							send_resp = 1;
+							send_resp_ff1 = 1;
 							send_ack = 1;
 							nxt_state = SEND_ACK;
 					end
@@ -370,7 +379,8 @@ always_comb begin
 					//EEP_cfg_data_set = EEP_data;
 					eep_set = 1;
 					//resp_data = 8'hEE;
-					send_resp = 1;
+					//send_ack = 1;
+					send_resp_ff1 = 1;
 					clr_cmd_rdy = 1;
 					nxt_state = IDLE;
 				end

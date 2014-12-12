@@ -7,7 +7,7 @@ output reg TX, tx_done;
 logic [3:0] bit_cnt;			// counts number of bits transmitted
 logic [5:0] baud_cnt;			// counts clock cycles between bit transmissions
 logic [9:0] tx_shft_reg; 	// shifts out tx_data bits
-logic cnt10, shift, load, load_ff, trans, set_done, clr_done, clr_cnt;
+logic cnt10, shift, load, trans, set_done, clr_done, clr_cnt;
 
 /////////////////////////////////////////
 // Define the two states of the FSM   //

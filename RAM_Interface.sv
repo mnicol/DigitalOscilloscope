@@ -35,6 +35,7 @@ logic store_offset;
 logic store_gain;
 logic done;
 logic set_cmd_rdy;
+logic ram_trmt_ff1, ram_trmt_ff2;
 //logic clr_cmd_rdy;
 
 /////////////////////////////////////////
@@ -50,17 +51,25 @@ always @(posedge clk, negedge rst_n) begin
 		state <= nxt_state;
 end
 
-/////////////////////////////////////////
-// 		 Increment cmd_cnt              //
-///////////////////////////////////////
+//////////////////////////////////////////////
+// Delay ram_trmt until resp_data ready    //
+////////////////////////////////////////////
 always_ff @(posedge clk) begin
-	if (&cmd_cnt && data_valid)
-		cmd_rdy <= 1'b0;
-	else if (set_cmd_rdy)
-		cmd_rdy <= 1'b1;
-	else
-		cmd_cnt <= cmd_cnt;
+	ram_trmt_ff2 <= ram_trmt_ff1;
+	ram_trmt <= ram_trmt_ff2;
 end
+
+/////////////////////////////////////////
+// 		 uhhhhhhhhhhhhhhhh              //
+///////////////////////////////////////
+//always_ff @(posedge clk) begin
+//	if (&cmd_cnt && data_valid)
+//		cmd_rdy <= 1'b0;
+//	else if (set_cmd_rdy)
+//		cmd_rdy <= 1'b1;
+//	else
+//		cmd_cnt <= cmd_cnt;
+//end
 
 /////////////////////////////////////////
 // 		 Set cmd 	                      //
@@ -146,17 +155,19 @@ end
 always_comb begin
 	strt_dump = 1'b0;
 	incr_addr = 1'b0;
-	ram_trmt = 1'b0;
+	ram_trmt_ff1 = 1'b0;
 	set_cmd_rdy = 1'b0;
 	//clr_cmd_rdy = 1'b0;
 	store_offset = 1'b0;
 	store_gain = 1'b0;
+	cmd_rdy = 0;
 	nxt_state = IDLE;
 
 	case (state)
 		IDLE: if (!we & en) begin
 				nxt_state = GET_OG;
-				set_cmd_rdy = 1'b1;
+				//set_cmd_rdy = 1'b1;
+				cmd_rdy = 1;
 			end
 			else nxt_state = IDLE;
 
@@ -164,7 +175,7 @@ always_comb begin
 				nxt_state = IDLE;
 			end
 			else begin
-				ram_trmt = 1'b1;
+				ram_trmt_ff1 = 1'b1;
 				nxt_state = WAIT;
 			end
 
@@ -181,11 +192,13 @@ always_comb begin
 			end
 			else if (data_valid) begin
 				nxt_state = GET_OG;
-				set_cmd_rdy = 1'b1;
+				//set_cmd_rdy = 1'b1;
+				cmd_rdy = 1;
 				store_offset = 1'b1;
 			end
 			else begin
 				nxt_state = GET_OG;
+				cmd_rdy = 1;
 			end
 
 		default: nxt_state = IDLE;
