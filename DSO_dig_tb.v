@@ -128,7 +128,9 @@ initial begin
 	send_full_cmd({EEP_WRT,8'b00101010, 8'hBB});
 
 	//Check for valid result
-	if(iUARTMSTR.rx_data != 8'hA5) begin
+	
+	@(posedge iUARTMSTR.UART_txrx.rdy);
+	if(iUARTMSTR.rx_data !== 8'hA5) begin
 			$strobe("--------------------------------------------------------------");
 			$strobe("--     EEPROM Write       -- Fail ---- Ack is %h not 0xA5 --", iUARTMSTR.rx_data );
 			$strobe("--------------------------------------------------------------\n");
@@ -146,8 +148,9 @@ initial begin
 //// EEP_RD ////
 	send_full_cmd({EEP_RD, 8'b00101010, 8'hFF});
 
+	@(posedge iUARTMSTR.UART_txrx.rdy);
 	//Check for valid result
-	if(iUARTMSTR.rx_data != 8'hBB) begin
+	if(iUARTMSTR.rx_data !== 8'hBB) begin
 			$strobe("--------------------------------------------------------------");
 			$strobe("--      EEPROM Read       -- Fail ---- Data: %h  ( 0xBB ) --", iUARTMSTR.rx_data );
 			$strobe("--------------------------------------------------------------\n");
@@ -164,8 +167,9 @@ initial begin
 //// CFG_GAIN ////
 	send_full_cmd({CFG_GAIN, 8'b000_111_00/*8'b000_ggg_cc*/, 8'hFF});
 
+	@(posedge iUARTMSTR.UART_txrx.rdy);
 	//Check for valid result
-	if(iUARTMSTR.rx_data != 8'hA5)begin
+	if(iUARTMSTR.rx_data !== 8'hA5)begin
 			$strobe("--------------------------------------------------------------");
 		 	$strobe("--   Config Gain Write    -- Fail ---- (Ack %h not 0xA5) --", iUARTMSTR.rx_data );
 			$strobe("--------------------------------------------------------------\n");
@@ -182,8 +186,9 @@ initial begin
 //// TRIG_CFG ////
 	send_full_cmd({TRIG_CFG, 8'b00_0_1_10_00/*8'b00_d_e_tt_cc*/, 8'hFF});
 
+	@(posedge iUARTMSTR.UART_txrx.rdy);
 	//Check for valid result
-	if(iUARTMSTR.rx_data != 8'hA5) begin
+	if(iUARTMSTR.rx_data !== 8'hA5) begin
 			$strobe("--------------------------------------------------------------");
 			$strobe("--  Trigger Config Write  -- Fail ---- (Ack is %h not 0xA5) --", iUARTMSTR.rx_data );
 			$strobe("--------------------------------------------------------------\n");
@@ -200,8 +205,9 @@ initial begin
 //// TRIG_LVL ////
 	send_full_cmd({TRIG_LVL, 8'hFF, 8'h80});
 
+	@(posedge iUARTMSTR.UART_txrx.rdy);
 	//Check for valid result
-	if(iUARTMSTR.rx_data != 8'hA5) begin
+	if(iUARTMSTR.rx_data !== 8'hA5) begin
 			$strobe("--------------------------------------------------------------");
 			$strobe("--   Trigger Level Write  -- Fail ---- (Ack %h not 0xA5) --", iUARTMSTR.rx_data );
 			$strobe("--------------------------------------------------------------\n");
@@ -218,13 +224,14 @@ initial begin
 //// TRIG_POS ////
 	send_full_cmd({TRIG_POS, 8'b0000_0000, 8'h80});
 
+	@(posedge iUARTMSTR.UART_txrx.rdy);
 	//Check for valid result
-	if(iUARTMSTR.rx_data != 8'hA5) begin
+	if(iUARTMSTR.rx_data !== 8'hA5) begin
 			$strobe("--------------------------------------------------------------");
 			$strobe("-- Trigger Position Write -- Fail ---- (Ack %h not 0xA5) --", iUARTMSTR.rx_data );
 			$strobe("--------------------------------------------------------------\n");
 		end
-	else if ( iDUT.iDC.iCC.trig_pos != 9'h80) begin
+	else if ( iDUT.iDC.iCC.trig_pos !== 9'h80) begin
 			$strobe("--------------------------------------------------------------");
 			$strobe("------   Trig Pos Internal Wrong: %h should be 0x80   ------", iDUT.iDC.iCC.trig_pos );
 			$strobe("--------------------------------------------------------------\n");
@@ -241,13 +248,14 @@ initial begin
 //// SET_DEC ////
 	send_full_cmd({SET_DEC, 8'hFF, 8'h02});
 
+	@(posedge iUARTMSTR.UART_txrx.rdy);
 	//Check for valid result
-	if(iUARTMSTR.rx_data != 8'hA5) begin
+	if(iUARTMSTR.rx_data !== 8'hA5) begin
 			$strobe("--------------------------------------------------------------");
 			$strobe("--      Set Decimator     -- Fail ---- (Ack %h not 0xA5) --", iUARTMSTR.rx_data );
 			$strobe("--------------------------------------------------------------\n");
 		end
-	else if( iDUT.iDC.iCC.decimator != 8'h02 ) begin
+	else if( iDUT.iDC.iCC.decimator !== 8'h02 ) begin
 			$strobe("--------------------------------------------------------------");
 			$strobe("------  Decimator Internal Wrong: %h should be 0x02  ------", iDUT.iDC.iCC.decimator);
 			$strobe("--------------------------------------------------------------");
@@ -265,8 +273,9 @@ initial begin
 //// TRIG_RD ////
 	send_full_cmd({TRIG_RD, 8'hBA, 8'hE0});
 
+	@(posedge iUARTMSTR.UART_txrx.rdy);
 	//Check if the config data is correct
-	if(iUARTMSTR.rx_data != 8'b00111000) begin
+	if(iUARTMSTR.rx_data !== 8'b00111000) begin
 			$strobe("--------------------------------------------------------------");
 			$strobe("------------  Trig Read Fail: %h should be 0x38  ----------- %tns", iUARTMSTR.rx_data, $time);
 			$strobe("--------------------------------------------------------------\n");
@@ -308,8 +317,8 @@ initial begin
 
 	$fclose(fd);
 
-
-	$stop();
+	#1000 $stop;
+	//@(posedge iDUT.iDC.iRAMI.done) $stop();
 
 end
 

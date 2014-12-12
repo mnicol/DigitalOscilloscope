@@ -1,6 +1,6 @@
 module RAM_Interface(clk, rst_n, trace_end, cap_en, cap_addr, dump_en, dump_chan, we, 
 										ch1_rdata, ch2_rdata, ch3_rdata, og_data, data_valid, addr, en,
-										ram_trmt, tx_done, ram_tx_data, cmd_rdy, cmd, og_addr);
+										ram_trmt, tx_done, ram_tx_data, cmd_rdy, cmd, og_addr);//, clr_cmd_rdy);
 
 /////////////////////////////////////////
 // 		 Inputs 	                      //
@@ -12,6 +12,7 @@ input logic [7:0] ch1_rdata, ch2_rdata, ch3_rdata;
 input logic [7:0] og_data;
 input logic [2:0] og_addr;
 input logic data_valid;
+//input logic clr_cmd_rdy;
 
 /////////////////////////////////////////
 // 		 Outputs 	                      //
@@ -33,6 +34,8 @@ logic [1:0] cmd_cnt;
 logic store_offset;
 logic store_gain;
 logic done;
+logic set_cmd_rdy;
+//logic clr_cmd_rdy;
 
 /////////////////////////////////////////
 // 		 States  	                      //
@@ -45,6 +48,18 @@ always @(posedge clk, negedge rst_n) begin
 		state <= IDLE;
 	else
 		state <= nxt_state;
+end
+
+/////////////////////////////////////////
+// 		 Increment cmd_cnt              //
+///////////////////////////////////////
+always_ff @(posedge clk) begin
+	if (&cmd_cnt && data_valid)
+		cmd_rdy <= 1'b0;
+	else if (set_cmd_rdy)
+		cmd_rdy <= 1'b1;
+	else
+		cmd_cnt <= cmd_cnt;
 end
 
 /////////////////////////////////////////
@@ -65,7 +80,7 @@ always_ff @(posedge clk, negedge rst_n) begin
 		cmd_cnt <= 2'b00;
 	else if (tx_done)
 		cmd_cnt <= 2'b00;
-	else if (cmd_rdy)
+	else if (set_cmd_rdy)
 		cmd_cnt <= cmd_cnt + 1;
 	else
 		cmd_cnt <= cmd_cnt;
@@ -132,7 +147,8 @@ always_comb begin
 	strt_dump = 1'b0;
 	incr_addr = 1'b0;
 	ram_trmt = 1'b0;
-	cmd_rdy = 1'b0;
+	set_cmd_rdy = 1'b0;
+	//clr_cmd_rdy = 1'b0;
 	store_offset = 1'b0;
 	store_gain = 1'b0;
 	nxt_state = IDLE;
@@ -140,7 +156,7 @@ always_comb begin
 	case (state)
 		IDLE: if (!we & en) begin
 				nxt_state = GET_OG;
-				cmd_rdy = 1'b1;
+				set_cmd_rdy = 1'b1;
 			end
 			else nxt_state = IDLE;
 
@@ -165,7 +181,7 @@ always_comb begin
 			end
 			else if (data_valid) begin
 				nxt_state = GET_OG;
-				cmd_rdy = 1'b1;
+				set_cmd_rdy = 1'b1;
 				store_offset = 1'b1;
 			end
 			else begin
